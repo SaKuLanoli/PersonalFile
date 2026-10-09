@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="description" content="校园闯关小勇士·移动端课堂模式离线演示（F4本课安排+F5掌控节奏）">
+  <title>校园闯关小勇士 · 课堂模式</title>
+  <style>
+    :root{
+      --yellow:#FFD100;--ink:#1A1A1A;--ink2:#2C2C2C;
+      --bg:#EDF0F3;--card:#FFFFFF;--muted:#777777;--body:#333333;
+      --line:#E3E6EA;--chip:#F4F5F7;--danger:#E5484D;--ok:#2FA96E;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      margin:0;background:#D8DDE3;color:var(--body);
+      font:17px/1.6 Inter,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+      display:flex;justify-content:center;align-items:stretch;
+    }
+    button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+    /* 手机壳（PC 预览用） */
+    .phone{
+      width:100%;max-width:420px;background:var(--bg);
+      display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;overflow:hidden;
+      box-shadow:0 0 40px rgba(0,0,0,.25);
+    }
+    @media(min-width:480px){body{padding:18px 0}.phone{border-radius:28px;height:min(880px,calc(100vh - 36px))}}
+
+    /* ===== App 顶栏 ===== */
+    .appbar{
+      background:repeating-linear-gradient(135deg,var(--ink) 0 22px,var(--ink2) 22px 44px);
+      color:#fff;padding:14px 18px 12px;flex-shrink:0;position:relative;
+    }
+    .appbar-row{display:flex;align-items:center;gap:10px}
+    .appbar .bolt{width:34px;height:36px;border-radius:8px;background:var(--yellow);color:var(--ink);display:grid;place-items:center;font-weight:900;font-size:18px;transform:skewX(-6deg)}
+    .appbar h1{font-size:19px;font-weight:800;margin:0;letter-spacing:.5px}
+    .appbar .sub{font-size:11px;color:#B9BEC6;letter-spacing:2px;margin:2px 0 0}
+    .offline-badge{
+      margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;
+    }
+    .ob-row{display:flex;gap:6px;align-items:center}
+    .pill{font-size:10px;font-weight:800;letter-spacing:1px;padding:3px 9px;border-radius:999px}
+    .pill.gray{border:1px solid #4A4A4A;color:#CFCFCF}
+    .pill.yellow{background:var(--yellow);color:var(--ink)}
+    .pill.red{background:var(--danger);color:#fff}
+    .battery{font-size:10px;color:#9BA1A9;letter-spacing:1px}
+    .yellow-bar{height:4px;background:var(--yellow);flex-shrink:0}
+
+    /* ===== 屏幕区 ===== */
+    .screens{flex:1;overflow-y:auto;overscroll-behavior:contain;position:relative}
+    .screen{display:none;padding:16px 16px 120px;flex-direction:column;gap:14px;animation:fadein .22s ease both}
+    .screen.active{display:flex}
+    @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+    .card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 1px 3px rgba(26,26,26,.06)}
+    .eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--muted)}
+    .card h2{font-size:20px;font-weight:800;color:var(--ink);margin:4px 0 8px}
+    .card p{font-size:15px;color:var(--muted);margin:0}
+    .black-card{background:repeating-linear-gradient(135deg,var(--ink) 0 26px,var(--ink2) 26px 52px);color:#fff;border-radius:16px;padding:20px}
+    .black-card h2{color:var(--yellow);margin:4px 0 6px}
+    .black-card p{color:#C6CBD1}
+    .tag-yellow{display:inline-block;background:var(--yellow);color:var(--ink);font-size:11px;font-weight:900;font-style:italic;letter-spacing:1.5px;padding:4px 12px;border-radius:999px;transform:skewX(-6deg)}
+
+    /* 今日课表 */
+    .lesson-card{display:flex;justify-content:space-between;align-items:center;gap:14px}
+    .meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .meta-chips span{font-size:12px;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#EDEFF2;padding:4px 12px;border-radius:999px}
+    .step-list{display:flex;flex-direction:column;gap:10px}
+    .step{
+      display:flex;align-items:center;gap:13px;background:var(--card);border-radius:14px;
+      padding:15px 16px;border:1.5px solid var(--line);min-height:64px;
+    }
+    .step .ic{width:38px;height:38px;min-width:38px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:var(--chip)}
+    .step b{font-size:16px;color:var(--ink);display:block}
+    .step small{font-size:12px;color:var(--muted)}
+    .step .state{margin-left:auto;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px}
+    .state.todo{background:var(--chip);color:var(--muted)}
+    .state.doing{background:var(--yellow);color:var(--ink)}
+    .state.done{background:#E4F5EC;color:var(--ok)}
+    .step:active{transform:scale(.985)}
+
+    /* 签到 */
+    .alert-card{background:#FDEFEF;border:1.5px solid #F3B8BA;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+    .alert-card .ai{width:34px;height:34px;min-width:34px;border-radius:50%;background:var(--danger);color:#fff;display:grid;place-items:center;font-weight:900;font-size:17px}
+    .alert-card b{color:#B3261E;font-size:15px}
+    .alert-card p{font-size:13px;color:#8C4A4A;margin:3px 0 0}
+    .stu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+    .stu{
+      background:var(--card);border:1.5px solid var(--line);border-radius:12px;
+      padding:10px 4px 8px;text-align:center;min-height:64px;
+    }
+    .stu:active{transform:scale(.95)}
+    .stu .avatar{width:36px;height:36px;margin:0 auto 5px;border-radius:50%;background:var(--ink);color:var(--yellow);display:grid;place-items:center;font-weight:800;font-size:15px}
+    .stu b{display:block;font-size:12px;color:var(--ink)}
+    .stu small{font-size:10px;font-weight:800;letter-spacing:.5px}
+    .stu.here small{color:var(--ok)}
+    .stu.leave small{color:#C78A2D}
+    .stu.observer small{color:#5B7FD4}
+    .stu.leave .avatar{background:#C78A2D;color:#fff}
+    .stu.observer .avatar{background:#5B7FD4;color:#fff}
+    .stu.locked .avatar{background:var(--danger);color:#fff}
+    .sign-bar{display:flex;gap:10px;align-items:center}
+    .sign-bar .cnt{font-size:14px;font-weight:800;color:var(--ink)}
+    .sign-bar .cnt em{color:var(--ok);font-style:normal}
+    .ghost-btn{border:1.5px solid var(--ink);border-radius:10px;padding:10px 16px;font-weight:800;font-size:14px;color:var(--ink)}
+    .ghost-btn:active{background:var(--ink);color:var(--yellow)}
+
+    /* 分组 */
+    .group-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .gcard{background:var(--card);border-radius:13px;padding:13px 14px;border:1.5px solid var(--line)}
+    .gcard h4{margin:0 0 7px;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:7px}
+    .gcard h4 i{font-style:normal;background:var(--yellow);color:var(--ink);font-size:10px;font-weight:900;padding:2px 8px;border-radius:999px;transform:skewX(-6deg)}
+    .gcard p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.8}
+    .gcard .role{color:var(--ink);font-weight:700}
+
+    /* 器材 */
+    .gear-item{display:flex;align-items:center;gap:13px;padding:13px 4px;border-bottom:1px dashed var(--line);min-height:56px}
+    .gear-item:last-child{border-bottom:none}
+    .gear-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+    .ghost-btn-mini{
+      background:var(--yellow);color:var(--ink);border:none;border-radius:9px;
+      font-size:12.5px;font-weight:800;padding:7px 12px;min-height:34px;
+      transition:transform .12s,box-shadow .12s;box-shadow:0 2px 0 rgba(26,26,26,.85);
+    }
+    .ghost-btn-mini:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(26,26,26,.85)}
+    .bigcheck{
+      width:30px;height:30px;min-width:30px;border-radius:9px;border:2px solid #C9CED5;
+      display:grid;place-items:center;font-size:16px;font-weight:900;color:transparent;background:#fff;
+    }
+    .gear-item.on .bigcheck{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+    .gear-item b{font-size:16px;color:var(--ink);display:block}
+    .gear-item small{font-size:12px;color:var(--muted)}
+
+    /* ===== 执行页（掌控节奏） ===== */
+    .run-screen{padding:14px 14px 120px;gap:12px}
+    .station-track{display:flex;gap:5px}
+    .st-cell{
+      flex:1;height:34px;border-radius:9px;background:var(--card);border:1.5px solid var(--line);
+      display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--muted);
+    }
+    .st-cell.done{background:#E4F5EC;border-color:#BFE5D2;color:var(--ok)}
+    .st-cell.now{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+    .timer-wrap{position:relative;display:grid;place-items:center;padding:10px 0 4px}
+    .ring{width:218px;height:218px}
+    .ring circle{fill:none;stroke-width:13;stroke-linecap:round}
+    .ring .bg{stroke:#E6E9EE}
+    .ring .fg{stroke:var(--yellow);stroke-dasharray:622;stroke-dashoffset:0;transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset .95s linear,stroke .3s}
+    .ring.rest .fg{stroke:#5B7FD4}
+    .timer-num{position:absolute;font-size:64px;font-weight:900;letter-spacing:-2px;color:var(--ink);font-variant-numeric:tabular-nums}
+    .timer-phase{position:absolute;bottom:26px;font-size:13px;font-weight:800;letter-spacing:2px;color:var(--muted)}
+    .phase-tag{align-self:center}
+    .station-info .levels{display:flex;gap:6px;margin-top:10px}
+    .lv-btn{flex:1;background:var(--chip);border-radius:11px;padding:11px 0;font-size:14px;font-weight:800;color:var(--muted);min-height:48px}
+    .lv-btn.active{background:var(--ink);color:var(--yellow)}
+    .task-line{margin-top:11px;background:var(--chip);border-radius:11px;padding:11px 13px;font-size:14.5px;color:var(--ink);font-weight:600}
+    .rotation-line{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted)}
+    .rotation-line b{color:var(--ink)}
+    .run-actions{display:flex;gap:10px}
+    .run-actions .ghost-btn{flex:1;text-align:center;min-height:52px;display:grid;place-items:center}
+    .sos-bar{
+      background:var(--danger);color:#fff;border-radius:14px;padding:16px;text-align:center;
+      font-weight:900;font-size:16px;letter-spacing:3px;position:relative;overflow:hidden;
+      user-select:none;-webkit-user-select:none;touch-action:none;
+    }
+    .sos-bar .fill{position:absolute;inset:0;width:0%;background:#B3261E;transition:width .1s linear}
+    .sos-bar span{position:relative}
+
+    /* 播报条 */
+    .announce{
+      position:absolute;left:14px;right:14px;top:10px;z-index:60;
+      background:var(--ink);color:var(--yellow);border-radius:14px;padding:16px;
+      text-align:center;font-size:20px;font-weight:900;letter-spacing:2px;
+      box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .25s ease both;
+    }
+    @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+
+    /* 发章覆盖层 */
+    .overlay{
+      position:absolute;inset:0;z-index:80;background:rgba(26,26,26,.55);backdrop-filter:blur(2px);
+      display:none;flex-direction:column;justify-content:flex-end;
+    }
+    .overlay.show{display:flex}
+    .sheet{
+      background:var(--bg);border-radius:22px 22px 0 0;max-height:82%;overflow-y:auto;
+      padding:18px 16px 26px;animation:up .25s ease both;
+    }
+    @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+    .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+    .sheet-head h3{margin:0;font-size:18px;font-weight:800;color:var(--ink)}
+    .close-x{width:38px;height:38px;border-radius:50%;background:var(--chip);font-size:17px;font-weight:900;color:var(--muted)}
+    .medal-pick{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}
+    .medal-btn{background:var(--card);border:1.5px solid var(--line);border-radius:13px;padding:13px;text-align:left;min-height:64px}
+    .medal-btn b{display:block;font-size:15px;color:var(--ink)}
+    .medal-btn small{font-size:11.5px;color:var(--muted)}
+    .medal-btn.sel{border-color:var(--yellow);background:#FFFBE6;box-shadow:inset 0 0 0 1px var(--yellow)}
+    .hint-long{font-size:12px;color:var(--muted);text-align:center}
+
+    /* 应急全屏 */
+    .sos-screen{
+      position:absolute;inset:0;z-index:100;background:var(--danger);color:#fff;
+      display:none;flex-direction:column;gap:12px;padding:20px 16px 26px;overflow-y:auto;
+    }
+    .sos-screen.show{display:flex;animation:pop .2s ease both}
+    .sos-screen h2{font-size:24px;font-weight:900;margin:0;letter-spacing:2px}
+    .sos-screen .sub{font-size:14px;color:#FFD9DA;margin:0 0 4px}
+    .sos-btn{background:#fff;color:#B3261E;border-radius:14px;padding:16px;font-size:17px;font-weight:800;text-align:left;display:flex;justify-content:space-between;align-items:center;min-height:60px}
+    .sos-btn:active{transform:scale(.98)}
+    .sos-call{background:#B3261E;color:#fff;border:2px solid #fff;border-radius:14px;padding:15px;font-size:17px;font-weight:900;text-align:center;letter-spacing:2px}
+    .first-aid{background:rgba(0,0,0,.18);border-radius:14px;padding:14px 16px}
+    .first-aid b{display:block;font-size:16px;margin-bottom:6px}
+    .first-aid ol{margin:0;padding-left:20px;font-size:14.5px;line-height:2}
+    .sos-back{background:none;color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:12px;padding:11px;font-weight:800;letter-spacing:2px}
+
+    /* 完赛页 */
+    .finish-hero{border-radius:16px;background:repeating-linear-gradient(135deg,var(--ink) 0 26px,var(--ink2) 26px 52px);color:#fff;padding:24px 20px;text-align:center}
+    .finish-hero .big{font-size:44px;font-weight:900;color:var(--yellow);letter-spacing:2px;font-style:italic}
+    /* —— 课中反馈收集（完赛时填写） —— */
+    .fb-q{margin-top:15px}
+    .fb-q:first-of-type{margin-top:0}
+    .fb-q .qt{font-size:16px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:9px}
+    .fb-q .qt i{font-style:normal;background:var(--yellow);color:var(--ink);width:24px;height:24px;min-width:24px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:900}
+    .fb-opts{display:flex;gap:8px}
+    .fb-opts button{
+      flex:1;border:1.5px solid var(--line);border-radius:12px;background:#fff;
+      font-size:15px;font-weight:700;color:var(--muted);padding:14px 4px;min-height:52px;
+      transition:all .12s;
+    }
+    .fb-opts button:active{transform:scale(.97)}
+    .fb-opts button.sel{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:800}
+    .fb-done{display:flex;align-items:center;gap:11px;background:#E4F5EC;border:1.5px solid #BFE5D2;border-radius:13px;padding:14px 16px}
+    .fb-done .ck{width:30px;height:30px;min-width:30px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-weight:900}
+    .fb-done b{font-size:15px;color:var(--ok);display:block}
+    .fb-done p{font-size:12.5px;color:#4E7A62;margin:2px 0 0}
+    .finish-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+    .fstat{background:var(--card);border-radius:13px;padding:13px 6px;text-align:center}
+    .fstat b{display:block;font-size:22px;font-weight:900;color:var(--ink)}
+    .fstat small{font-size:11px;color:var(--muted);font-weight:700}
+    .sync-note{display:flex;gap:10px;align-items:center;background:#FFF6DC;border:1.5px solid #EAD27E;border-radius:13px;padding:13px 15px}
+    .sync-note b{font-size:14px;color:#8A6D14;display:block}
+    .sync-note p{font-size:12.5px;color:#A98F3D;margin:2px 0 0}
+
+    /* ===== 底部主操作栏 ===== */
+    .bottombar{
+      position:absolute;left:0;right:0;bottom:0;z-index:50;
+      padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+      background:linear-gradient(transparent,var(--bg) 30%);
+    }
+    .main-btn{
+      width:100%;background:var(--yellow);color:var(--ink);border-radius:16px;
+      font-size:19px;font-weight:900;letter-spacing:1px;padding:19px;min-height:64px;
+      box-shadow:0 3px 0 rgba(26,26,26,.85);transition:transform .12s;
+    }
+    .main-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(26,26,26,.85)}
+    .main-btn.dark{background:var(--ink);color:var(--yellow)}
+    .main-btn[disabled]{background:#C9CED5;color:#fff;box-shadow:none}
+
+    .toast{
+      position:absolute;left:50%;bottom:110px;transform:translateX(-50%);z-index:120;
+      background:var(--ink);color:#fff;border-radius:999px;padding:11px 22px;
+      font-size:15px;font-weight:700;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.3);
+      animation:pop .2s ease both;
+    }
+  </style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <!-- App 顶栏 -->
+  <header class="appbar">
+    <div class="appbar-row">
+      <span class="bolt">⚡</span>
+      <div>
+        <h1>校园闯关小勇士</h1>
+        <p class="sub">CAMPUS WARRIOR · 课堂模式</p>
+      </div>
+      <div class="offline-badge">
+        <div class="ob-row">
+          <span class="pill yellow" id="syncPill">离线可用</span>
+          <span class="pill gray">五(2)班</span>
+        </div>
+        <span class="battery" id="battery">🔋 86% · 节电模式</span>
+      </div>
+    </div>
+  </header>
+  <div class="yellow-bar"></div>
+
+  <!-- 屏幕区 -->
+  <main class="screens" id="screens">
+
+    <!-- ① 今日课表 -->
+    <section class="screen active" id="scr-home">
+      <div class="black-card lesson-card">
+        <div>
+          <span class="tag-yellow">LESSON 3 · SSN 2026</span>
+          <h2 id="homeTitle">校园能量补给队</h2>
+          <p>微课时 20 分钟 · 操场 · 已从备课包加载</p>
+          <div class="meta-chips"><span>♟ 40人 / 10组</span><span>◷ 8 站点</span><span>⌖ 折返与耐力</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">课前 4 步 · 全部离线完成</div>
+        <div class="step-list" style="margin-top:10px">
+          <button class="step" data-go="signin"><span class="ic">✓</span><div><b>学生签到</b><small>点击切换：已到 / 请假 / 见习</small></div><span class="state todo" id="st-signin">待办</span></button>
+          <button class="step" data-go="groups"><span class="ic">♟</span><div><b>分组确认</b><small>4 人小组 · 角色轮换</small></div><span class="state todo" id="st-groups">待办</span></button>
+          <button class="step" data-go="gear"><span class="ic">▣</span><div><b>器材清点</b><small>8 站点器材到位勾选</small></div><span class="state todo" id="st-gear">待办</span></button>
+          <button class="step" id="demoSpeed"><span class="ic">◷</span><div><b>演示节奏</b><small id="speedLabel">真实节奏：每站 30-45 秒</small></div><span class="state todo" id="st-speed">真实</span></button>
+        </div>
+      </div>
+      <div class="alert-card">
+        <span class="ai">!</span>
+        <div><b>健康二次确认</b><p>王小雨（BMI 偏高 → 默认基础难度）、李跳跳（脚踝恢复期 → 建议见习转安全员）。签到页可查看。</p></div>
+      </div>
+    </section>
+
+    <!-- ② 签到 -->
+    <section class="screen" id="scr-signin">
+      <div class="sign-bar">
+        <span class="cnt">已到 <em id="hereCnt">0</em> / 40</span>
+        <button class="ghost-btn" id="allHere" style="margin-left:auto">全员已到</button>
+      </div>
+      <div class="alert-card">
+        <span class="ai">!</span>
+        <div><b>健康警示（2 人）</b><p>王小雨：BMI 偏高，默认锁定基础难度<br>李跳跳：脚踝恢复期，建议见习（安全员）</p></div>
+      </div>
+      <div class="stu-grid" id="stuGrid"></div>
+      <p class="hint-long" style="text-align:center">点击学生切换状态：已到 → 请假 → 见习</p>
+    </section>
+
+    <!-- ③ 分组 -->
+    <section class="screen" id="scr-groups">
+      <div class="card">
+        <div class="eyebrow">今日分组 · 4 人 × 10 组 · 角色每轮轮换</div>
+        <div class="group-grid" id="groupGrid" style="margin-top:12px"></div>
+      </div>
+      <p class="hint-long" style="text-align:center">长按 1 秒可拖拽调组（演示版已锁定）</p>
+    </section>
+
+    <!-- ④ 器材 -->
+    <section class="screen" id="scr-gear">
+      <div class="card">
+        <div class="gear-head">
+          <div class="eyebrow">8 站点器材清点 · <span id="gearCnt">0</span> / 8 已就位</div>
+          <button id="gearAll" class="ghost-btn-mini">⚡ 一键全选</button>
+        </div>
+        <div id="gearList" style="margin-top:6px"></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">替代方案（器材不足时）</div>
+        <p style="margin-top:8px">跳绳 → 徒手节奏踏步 · 实心球 → 徒手跪姿俯卧撑 · 平衡垫 → 地面标线单脚站</p>
+      </div>
+    </section>
+
+    <!-- ⑤ 掌控节奏 -->
+    <section class="screen run-screen" id="scr-run">
+      <div class="station-track" id="track"></div>
+      <div class="timer-wrap">
+        <svg class="ring" id="ring" viewBox="0 0 218 218">
+          <circle class="bg" cx="109" cy="109" r="99"></circle>
+          <circle class="fg" id="ringFg" cx="109" cy="109" r="99"></circle>
+        </svg>
+        <div class="timer-num" id="clock">30</div>
+        <div class="timer-phase" id="phase">动作练习</div>
+      </div>
+      <div class="card station-info">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+          <h2 style="margin:0" id="runStation">S01 节奏跳绳</h2>
+          <span class="eyebrow" id="runCat">心肺</span>
+        </div>
+        <div class="levels" id="runLevels">
+          <button class="lv-btn" data-lv="0">基础</button>
+          <button class="lv-btn active" data-lv="1">进阶</button>
+          <button class="lv-btn" data-lv="2">挑战</button>
+        </div>
+        <div class="task-line" id="runTask">30 秒跳绳 + 10 次开合跳</div>
+        <p style="margin-top:9px" id="runSafe">轻落地、腕发力；连续跳不超过 30 秒</p>
+      </div>
+      <div class="card rotation-line">
+        <span>本轮：<b id="rotNow">A-F 组在本站</b></span>
+        <span style="margin-left:auto" id="roundNo">第 1 / 1 轮</span>
+      </div>
+      <div class="run-actions">
+        <button class="ghost-btn" id="btnPause">⏸ 暂停</button>
+        <button class="ghost-btn" id="btnMedal">🏅 发章</button>
+        <button class="ghost-btn" id="btnSkip">⏭ 下一阶段</button>
+      </div>
+      <div class="sos-bar" id="sosBar"><div class="fill" id="sosFill"></div><span>SOS · 长按 3 秒启动应急</span></div>
+    </section>
+
+    <!-- ⑥ 完赛 -->
+    <section class="screen" id="scr-finish">
+      <div class="finish-hero">
+        <div class="big">FINISH!</div>
+        <p style="margin:8px 0 0">全 8 站完成 · 无应急事件</p>
+        <p style="margin:4px 0 0;color:#9BA1A9;font-size:13px">和自己比，就是胜利</p>
+      </div>
+      <div class="finish-stats">
+        <div class="fstat"><b id="fTime">--</b><small>课堂用时</small></div>
+        <div class="fstat"><b id="fSign">40</b><small>签到人数</small></div>
+        <div class="fstat"><b id="fMedal">0</b><small>发放奖章</small></div>
+      </div>
+      <div class="sync-note" id="syncNote">
+        <span style="font-size:26px">☁</span>
+        <div><b>课堂数据已本地暂存</b><p>回到 Wi-Fi 后自动同步至 Web 端「课后反馈」，无需手动操作。</p></div>
+      </div>
+      <div class="card" id="feedbackCard">
+        <div class="eyebrow">课后 30 秒 · 课中反馈收集</div>
+        <h2 style="font-size:19px;font-weight:800;color:var(--ink);margin:4px 0 2px">这堂课，孩子们感觉如何？</h2>
+        <p style="font-size:12.5px;color:var(--muted);margin:0 0 14px">仅记班级整体观察，不输入姓名；结果随课堂数据同步至 Web 端复盘。</p>
+        <div class="fb-q">
+          <div class="qt"><i>1</i>参与情况</div>
+          <div class="fb-opts" data-fb="participation">
+            <button data-v="大部分主动参与">大部分主动参与</button>
+            <button data-v="部分学生需要鼓励">部分需要鼓励</button>
+          </div>
+        </div>
+        <div class="fb-q">
+          <div class="qt"><i>2</i>整体疲劳</div>
+          <div class="fb-opts" data-fb="fatigue">
+            <button data-v="偏低">偏低</button>
+            <button data-v="适中">适中</button>
+            <button data-v="偏高">偏高</button>
+          </div>
+        </div>
+        <div class="fb-q">
+          <div class="qt"><i>3</i>排队等待</div>
+          <div class="fb-opts" data-fb="waiting">
+            <button data-v="较少">较少</button>
+            <button data-v="较多">较多</button>
+          </div>
+        </div>
+        <button class="main-btn" id="fbSubmit" disabled style="margin-top:16px">提交课中反馈</button>
+      </div>
+      <div class="card" id="fbDoneCard" style="display:none">
+        <div class="fb-done">
+          <span class="ck">✓</span>
+          <div>
+            <b>课中反馈已记录</b>
+            <p id="fbSummary">—</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">小学版说明</div>
+        <p style="margin-top:8px">小学课堂不记录 PB 计时排名，奖章以体验章与素养章为主；评价聚焦参与率与完赛体验。文字观察可在 Web 端课后补录。</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 底部主按钮 -->
+  <div class="bottombar">
+    <button class="main-btn" id="mainBtn">▶ 开始闯关</button>
+  </div>
+
+  <!-- 发章面板 -->
+  <div class="overlay" id="medalOverlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3>发放奖章 <span class="eyebrow" style="margin-left:6px">长按学生 1 秒选中</span></h3>
+        <button class="close-x" id="medalClose">✕</button>
+      </div>
+      <div class="stu-grid" id="medalGrid"></div>
+      <div class="eyebrow" style="margin:14px 0 0">选择奖章</div>
+      <div class="medal-pick" id="medalPick">
+        <button class="medal-btn" data-m="首闯启航章"><b>🚀 首闯启航章</b><small>第一次完整闯关</small></button>
+        <button class="medal-btn" data-m="坚毅坚持章"><b>💪 坚毅坚持章</b><small>全程坚持未退出</small></button>
+        <button class="medal-btn" data-m="安全守护章"><b>🛡 安全守护章</b><small>主动提醒同伴安全</small></button>
+        <button class="medal-btn" data-m="协作互助章"><b>🤝 协作互助章</b><small>帮助同伴 ≥ 1 次</small></button>
+      </div>
+      <button class="main-btn dark" id="medalGrant" disabled>长按选中学生后发放</button>
+    </div>
+  </div>
+
+  <!-- 应急全屏 -->
+  <div class="sos-screen" id="sosScreen">
+    <h2>⚠ 应急处置</h2>
+    <p class="sub">选择场景，按流程处置 · 设备已震动提醒</p>
+    <div id="sosScenarios">
+      <button class="sos-btn" data-sc="0"><span>🧊 扭伤 / 拉伤</span><span>›</span></button>
+      <button class="sos-btn" data-sc="1"><span>😵 头晕 / 心悸</span><span>›</span></button>
+      <button class="sos-btn" data-sc="2"><span>💨 过度换气</span><span>›</span></button>
+      <button class="sos-btn" data-sc="3"><span>🫁 哮喘发作</span><span>›</span></button>
+      <button class="sos-btn" data-sc="4"><span>❤ 心脏骤停</span><span>›</span></button>
+    </div>
+    <div class="first-aid" id="firstAid" style="display:none">
+      <b id="faTitle"></b>
+      <ol id="faSteps"></ol>
+    </div>
+    <a class="sos-call" href="tel:00000000000">☎ 拨打校医（校内 8120）</a>
+    <a class="sos-call" href="tel:120">☎ 拨打 120 急救</a>
+    <button class="sos-back" id="sosBack">‹ 返回课堂（情况已受控）</button>
+  </div>
+
+</div>
+
+<script>
+(()=>{
+  const $=id=>document.getElementById(id);
+  const vibrate=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+
+  /* ---------- 数据（小学版 · 难度降档 + 游戏化替代） ---------- */
+  const STATIONS=[
+    {id:'S01',name:'节奏跳绳',cat:'心肺',dur:30,equip:'跳绳 ×10',lv:['20秒跳绳 + 8 次开合跳','30秒跳绳 + 10 次开合跳','45秒跳绳 + 15 次开合跳'],safe:'轻落地、腕发力；连续跳不超过 30 秒'},
+    {id:'S02',name:'球上俯卧撑',cat:'上肢',dur:30,equip:'实心球 2kg ×4',lv:['跪姿 3 次','跪姿 5 次','跪姿 8 次'],safe:'核心收紧，慢下慢起，不塌腰'},
+    {id:'S03',name:'敏捷绕桶',cat:'灵敏',dur:35,equip:'标志桶 ×6',lv:['绕桩 1 趟','绕桩 2 趟','绕桩 3 趟'],safe:'小步幅、重心低，绕桶不抢道'},
+    {id:'S04',name:'气球护送',cat:'协作',dur:40,equip:'气球 ×6',lv:['护送 10 米 ×1','护送 10 米 ×2','绕障护送 ×2'],safe:'不用手扶，掉了回起点重新出发'},
+    {id:'S05',name:'卷腹挑战',cat:'核心',dur:30,equip:'垫子 ×8',lv:['10 次','15 次','20 次'],safe:'下巴微收，手轻扶耳，不猛起'},
+    {id:'S06',name:'高抬腿冲刺',cat:'心肺',dur:25,equip:'无',lv:['15 秒','20 秒','30 秒'],safe:'膝至腰高，前脚掌落地'},
+    {id:'S07',name:'包包抱抱',cat:'下肢',dur:35,equip:'软包 2kg ×4',lv:['抱包走 10 米 ×1','×2 次','绕障抱包 ×2'],safe:'抱稳贴身，背挺直不弓'},
+    {id:'S08',name:'平衡小勇士',cat:'平衡',dur:30,equip:'平衡垫 ×4',lv:['单脚站 15 秒/腿','20 秒/腿','30 秒/腿'],safe:'目视前方，晃动就双脚落地'}
+  ];
+  const STUDENTS=[];
+  const surnames='王李张刘陈杨赵黄周吴';
+  for(let i=0;i<40;i++){
+    STUDENTS.push({no:i+1,name:surnames[i%10]+'小'+['勇','曦','悦','辰','果','安','朗','兮','宝','奇'][i%10],status:'here'});
+  }
+  STUDENTS[7].name='王小雨';STUDENTS[7].locked=true;   // BMI 偏高 → 锁基础
+  STUDENTS[14].name='李跳跳';STUDENTS[14].status='observer'; // 见习 → 安全员
+  const GROUPS=Array.from({length:10},(_,g)=>({
+    name:String.fromCharCode(65+g),
+    members:STUDENTS.slice(g*4,g*4+4).map(s=>s.name)
+  }));
+  const SOS=[
+    ['扭伤 / 拉伤',['停止运动，就地坐下','冰敷 15 分钟并抬高患肢','通知校医评估，登记事件']],
+    ['头晕 / 心悸',['立即停止，坐下或平躺','通风处休息，观察面色','5 分钟无缓解 → 通知校医并联系家长']],
+    ['过度换气',['引导缓慢呼吸（吸 4 秒 呼 6 秒）','陪同观察，不围观施压','10 分钟未恢复 → 校医']],
+    ['哮喘发作',['协助取吸入器，坐位前倾','远离运动区，安静休息','症状加重 → 立即 120']],
+    ['心脏骤停',['呼救并启动校园应急小组','开始 CPR，取 AED','同步拨打 120，不中断按压']]
+  ];
+
+  /* ---------- 状态 ---------- */
+  let speedFast=false;           // 快速演示模式
+  let medals=0,medalSel=null,stuSel=null;
+  let started=false;
+
+  /* ---------- 屏幕切换 ---------- */
+  function go(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $('scr-'+id).classList.add('active');
+    $('screens').scrollTop=0;
+    updateMainBtn();
+  }
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+
+  /* ---------- 主按钮 ---------- */
+  function updateMainBtn(){
+    const btn=$('mainBtn');
+    if($('scr-home').classList.contains('active')){btn.textContent='▶ 去签到（课前第 1 步）';btn.disabled=false;}
+    else if($('scr-signin').classList.contains('active')){btn.textContent='确认签到，去分组 →';btn.disabled=false;}
+    else if($('scr-groups').classList.contains('active')){btn.textContent='确认分组，去清点器材 →';btn.disabled=false;}
+    else if($('scr-gear').classList.contains('active')){btn.textContent='▶ 开始闯关';btn.disabled=!gearAllDone();}
+    else if($('scr-run').classList.contains('active')){btn.textContent=runState.paused?'▶ 继续计时':'⏸ 暂停计时';btn.disabled=false;}
+    else if($('scr-finish').classList.contains('active')){btn.textContent='回到今日课表';btn.disabled=false;}
+  }
+  $('mainBtn').onclick=()=>{
+    if($('scr-home').classList.contains('active'))go('signin');
+    else if($('scr-signin').classList.contains('active'))go('groups');
+    else if($('scr-groups').classList.contains('active'))go('gear');
+    else if($('scr-gear').classList.contains('active')){if(gearAllDone())startRun();}
+    else if($('scr-run').classList.contains('active'))togglePause();
+    else if($('scr-finish').classList.contains('active'))location.reload();
+  };
+
+  /* ---------- 签到 ---------- */
+  function renderStu(){
+    $('stuGrid').innerHTML=STUDENTS.map((s,i)=>{
+      const label=s.status==='here'?'已到':s.status==='leave'?'请假':'见习';
+      const cls=s.locked&&s.status==='here'?'locked':s.status;
+      return `<button class="stu ${cls}" data-i="${i}"><span class="avatar">${s.name[0]}</span><b>${s.name}</b><small>${s.locked?'基础·'+label:label}</small></button>`;
+    }).join('');
+    document.querySelectorAll('#stuGrid .stu').forEach(b=>b.onclick=()=>{
+      const s=STUDENTS[+b.dataset.i];
+      if(s.locked){toast('王小雨已锁定基础难度（健康档案）');return;}
+      s.status=s.status==='here'?'leave':s.status==='leave'?'observer':'here';
+      vibrate(15);renderStu();
+    });
+    $('hereCnt').textContent=STUDENTS.filter(s=>s.status==='here').length;
+    setStep('signin',STUDENTS.filter(s=>s.status==='here').length>=35?'done':'doing');
+  }
+  $('allHere').onclick=()=>{STUDENTS.forEach(s=>{if(s.status==='leave')s.status='here'});STUDENTS[14].status='observer';renderStu();toast('已按“全员已到”登记（见习保留）');};
+
+  /* ---------- 分组 ---------- */
+  function renderGroups(){
+    $('groupGrid').innerHTML=GROUPS.map(g=>`<div class="gcard"><h4><i>${g.name}组</i>4 人</h4><p>${g.members.map((m,i)=>`${m}<span class="role">·${['选手','裁判','安全员','记录员'][i]}</span>`).join('<br>')}</p></div>`).join('');
+  }
+
+  /* ---------- 器材 ---------- */
+  const gear=STATIONS.map(()=>false);
+  function gearAllDone(){return gear.every(x=>x);}
+  function renderGear(){
+    $('gearCnt').textContent=gear.filter(Boolean).length;
+    $('gearAll').textContent=gearAllDone()?'↺ 全部取消':'⚡ 一键全选';
+    $('gearList').innerHTML=STATIONS.map((s,i)=>`
+      <button class="gear-item ${gear[i]?'on':''}" data-i="${i}">
+        <span class="bigcheck">✓</span>
+        <div style="flex:1"><b>${s.id} ${s.name}</b><small>${s.equip}</small></div>
+        <span class="eyebrow">${s.cat}</span>
+      </button>`).join('');
+    document.querySelectorAll('.gear-item').forEach(b=>b.onclick=()=>{
+      gear[+b.dataset.i]=!gear[+b.dataset.i];vibrate(15);renderGear();
+      if(gearAllDone()){setStep('gear','done');toast('器材清点完成 ✓');}
+      else setStep('gear','doing');
+      updateMainBtn();
+    });
+  }
+  $('gearAll').onclick=()=>{
+    const will=!gearAllDone();
+    for(let i=0;i<gear.length;i++)gear[i]=will;
+    vibrate(will?[60,40,60]:[30]);
+    if(will){setStep('gear','done');toast('⚡ 8 站器材已一键全选，开始闯关');}
+    else{setStep('gear','todo');toast('已清空全部勾选');}
+    renderGear();updateMainBtn();
+  };
+
+  function setStep(name,state){
+    const el=$('st-'+name);if(!el)return;
+    el.className='state '+state;
+    el.textContent=state==='done'?'完成':state==='doing'?'进行中':'待办';
+  }
+
+  /* ---------- 演示节奏切换 ---------- */
+  $('demoSpeed').onclick=()=>{
+    speedFast=!speedFast;
+    $('speedLabel').textContent=speedFast?'快速演示：每站 6 秒（便于展示全流程）':'真实节奏：每站 30-45 秒';
+    $('st-speed').textContent=speedFast?'快速':'真实';
+    $('st-speed').className='state '+(speedFast?'doing':'todo');
+    toast(speedFast?'已切换：快速演示节奏':'已切换：真实课堂节奏');
+  };
+
+  /* ---------- 语音播报（大字条） ---------- */
+  function announce(text,ms=1600){
+    const old=document.querySelector('.announce');old&&old.remove();
+    const d=document.createElement('div');d.className='announce';d.textContent=text;
+    $('phone').appendChild(d);vibrate([40,60,40]);
+    try{const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=1.1;speechSynthesis.speak(u);}catch(e){}
+    setTimeout(()=>d.remove(),ms);
+  }
+  function toast(text){
+    const old=document.querySelector('.toast');old&&old.remove();
+    const d=document.createElement('div');d.className='toast';d.textContent=text;
+    $('phone').appendChild(d);setTimeout(()=>d.remove(),1800);
+  }
+
+  /* ---------- 掌控节奏（计时器核心） ---------- */
+  const runState={idx:0,phase:'work',left:0,paused:false,timer:null,startTs:0};
+  const REST=60;
+  function secs(s){return speedFast?Math.max(4,Math.round(s/6)):s;}
+  function startRun(){
+    started=true;go('run');
+    runState.idx=0;runState.phase='work';runState.paused=false;
+    setStep('signin','done');setStep('groups','done');setStep('gear','done');
+    beginStation();runState.startTs=Date.now();
+  }
+  function curStation(){return STATIONS[runState.idx];}
+  function phaseLen(){return runState.phase==='work'?secs(curStation().dur):secs(REST);}
+  function beginStation(){
+    runState.phase='work';runState.left=phaseLen();
+    announce('第 '+(runState.idx+1)+' 站 · '+curStation().name+'，开始！');
+    renderRun();tick();
+  }
+  function renderRun(){
+    const s=curStation();
+    $('track').innerHTML=STATIONS.map((x,i)=>`<div class="st-cell ${i<runState.idx?'done':i===runState.idx?'now':''}">${x.id}</div>`).join('');
+    $('clock').textContent=runState.left;
+    $('phase').textContent=runState.phase==='work'?'动作练习':'换站跑动 · 恢复';
+    $('ring').classList.toggle('rest',runState.phase!=='work');
+    const total=phaseLen(),ratio=total?runState.left/total:0;
+    $('ringFg').style.strokeDashoffset=String(622*(1-ratio));
+    $('runStation').textContent=s.id+' '+s.name;
+    $('runCat').textContent=s.cat+' · 器材：'+s.equip;
+    $('runTask').textContent=s.lv[curLv];
+    $('runSafe').textContent='✓ '+s.safe;
+    $('rotNow').textContent=runState.phase==='work'?'各组分站同步练习':'全员沿路线慢跑换站';
+    document.querySelectorAll('#runLevels .lv-btn').forEach(b=>b.classList.toggle('active',+b.dataset.lv===curLv));
+  }
+  let curLv=1;
+  document.querySelectorAll('#runLevels .lv-btn').forEach(b=>b.onclick=()=>{curLv=+b.dataset.lv;renderRun();});
+  function tick(){
+    clearInterval(runState.timer);
+    runState.timer=setInterval(()=>{
+      if(runState.paused)return;
+      runState.left--;
+      if(runState.left===15&&runState.phase==='work')announce('剩余 15 秒！',1200);
+      if(runState.left<=0){
+        clearInterval(runState.timer);
+        if(runState.phase==='work'){
+          runState.phase='rest';runState.left=phaseLen();
+          announce('时间到！换站跑动，注意间距',1800);renderRun();tick();
+        }else{
+          runState.idx++;
+          if(runState.idx>=STATIONS.length){finish();return;}
+          beginStation();
+        }
+        return;
+      }
+      renderRun();
+    },1000);
+  }
+  function togglePause(){
+    runState.paused=!runState.paused;
+    announce(runState.paused?'已暂停 · 教师掌控节奏':'继续！',1100);
+    updateMainBtn();
+  }
+  $('btnPause').onclick=togglePause;
+  $('btnSkip').onclick=()=>{
+    clearInterval(runState.timer);
+    if(runState.phase==='work'){runState.phase='rest';runState.left=phaseLen();announce('跳过练习，进入换站',1200);}
+    else{runState.idx++;if(runState.idx>=STATIONS.length){finish();return;}beginStation();return;}
+    renderRun();tick();
+  };
+  function finish(){
+    clearInterval(runState.timer);
+    const used=Math.round((Date.now()-runState.startTs)/1000);
+    $('fTime').textContent=String(Math.floor(used/60))+'′'+String(used%60).padStart(2,'0')+'″';
+    $('fSign').textContent=STUDENTS.filter(s=>s.status==='here').length;
+    $('fMedal').textContent=medals;
+    $('syncPill').textContent='待同步 1 课时';
+    $('syncPill').className='pill red';
+    go('finish');
+    announce('完赛！和自己比，就是胜利！',2200);
+  }
+
+  /* ---------- 发章（长按 1 秒防误触） ---------- */
+  $('btnMedal').onclick=openMedal;
+  function openMedal(){
+    $('medalGrid').innerHTML=STUDENTS.map((s,i)=>{
+      const label=s.status==='here'?'':s.status==='leave'?'（请假）':'（见习）';
+      return `<button class="stu here" data-i="${i}" style="position:relative;overflow:hidden"><span class="avatar">${s.name[0]}</span><b>${s.name}</b><small>${s.locked?'基础':(s.status==='here'?'长按选中':label)}</small><div class="fill" style="position:absolute;left:0;bottom:0;height:4px;width:0%;background:var(--yellow)"></div></button>`;
+    }).join('');
+    stuSel=null;medalSel=null;
+    $('medalGrant').disabled=true;$('medalGrant').textContent='长按选中学生后发放';
+    document.querySelectorAll('#medalPick .medal-btn').forEach(b=>b.classList.remove('sel'));
+    $('medalOverlay').classList.add('show');
+    // 长按 1s 选中（防误触）
+    document.querySelectorAll('#medalGrid .stu').forEach(btn=>{
+      let t=null,f=null,p=0;
+      const start=e=>{
+        if(STUDENTS[+btn.dataset.i].status!=='here'){toast('该生请假/见习，可发素养章需课后评定');return;}
+        p=0;const bar=btn.querySelector('.fill');
+        f=setInterval(()=>{p+=20;bar.style.width=Math.min(100,p)+'%'},20);
+        t=setTimeout(()=>{clearInterval(f);selectStu(btn);vibrate(30);},1000);
+      };
+      const cancel=()=>{clearTimeout(t);clearInterval(f);const bar=btn.querySelector('.fill');bar&&(bar.style.width='0%');};
+      btn.addEventListener('pointerdown',start);
+      btn.addEventListener('pointerup',cancel);
+      btn.addEventListener('pointerleave',cancel);
+    });
+  }
+  function selectStu(btn){
+    document.querySelectorAll('#medalGrid .stu').forEach(x=>{x.style.borderColor='';x.style.background=''});
+    btn.style.borderColor='var(--yellow)';btn.style.background='#FFFBE6';
+    stuSel=STUDENTS[+btn.dataset.i].name;
+    checkGrant();
+  }
+  document.querySelectorAll('#medalPick .medal-btn').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#medalPick .medal-btn').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');medalSel=b.dataset.m;checkGrant();
+  });
+  function checkGrant(){
+    if(stuSel&&medalSel){$('medalGrant').disabled=false;$('medalGrant').textContent='发放：'+stuSel+' · '+medalSel;}
+  }
+  $('medalGrant').onclick=()=>{
+    if(!stuSel||!medalSel)return;
+    medals++;vibrate([30,40,30]);
+    toast('🏅 '+medalSel+' → '+stuSel+'（已本地暂存）');
+    $('medalOverlay').classList.remove('show');
+  };
+  $('medalClose').onclick=()=>$('medalOverlay').classList.remove('show');
+
+  /* ---------- SOS 应急（长按 3 秒） ---------- */
+  (()=>{
+    let t=null,p=0,f=null;
+    const bar=$('sosBar');
+    const start=e=>{e.preventDefault();p=0;f=setInterval(()=>{p+=1.4;$('sosFill').style.width=Math.min(100,p)+'%'},30);t=setTimeout(()=>{clearInterval(f);openSos();},3000);};
+    const cancel=()=>{clearTimeout(t);clearInterval(f);$('sosFill').style.width='0%';};
+    bar.addEventListener('pointerdown',start);
+    bar.addEventListener('pointerup',cancel);
+    bar.addEventListener('pointerleave',cancel);
+  })();
+  function openSos(){
+    vibrate([80,60,80,60,120]);
+    $('firstAid').style.display='none';
+    $('sosScreen').classList.add('show');
+  }
+  document.querySelectorAll('.sos-btn').forEach(b=>b.onclick=()=>{
+    const sc=SOS[+b.dataset.sc];
+    $('faTitle').textContent=sc[0]+' · 处置流程';
+    $('faSteps').innerHTML=sc[1].map(x=>`<li>${x}</li>`).join('');
+    $('firstAid').style.display='block';
+  });
+  $('sosBack').onclick=()=>{$('sosScreen').classList.remove('show');toast('应急面板已关闭，事件已记录');};
+
+  /* ---------- 课中反馈收集（完赛页） ---------- */
+  const fb={participation:null,fatigue:null,waiting:null};
+  function fbCheck(){
+    const ok=fb.participation&&fb.fatigue&&fb.waiting;
+    $('fbSubmit').disabled=!ok;
+    $('fbSubmit').textContent=ok?'提交课中反馈':'请先完成 3 项选择';
+  }
+  document.querySelectorAll('.fb-opts').forEach(box=>{
+    box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      fb[box.dataset.fb]=b.dataset.v;
+      box.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');vibrate(12);fbCheck();
+    });
+  });
+  $('fbSubmit').onclick=()=>{
+    if(!(fb.participation&&fb.fatigue&&fb.waiting))return;
+    vibrate([30,40,30]);
+    $('feedbackCard').style.display='none';
+    $('fbDoneCard').style.display='block';
+    $('fbSummary').textContent=`参与：${fb.participation} · 疲劳：${fb.fatigue} · 等待：${fb.waiting}。将随课堂数据同步至 Web 端。`;
+    $('syncNote').querySelector('b').textContent='课堂数据 + 课中反馈已本地暂存';
+    announce('反馈已记录，感谢总结！',1500);
+  };
+
+  /* ---------- 初始化 ---------- */
+  fbCheck();
+  renderStu();renderGroups();renderGear();updateMainBtn();
+  setStep('signin','todo');
+})();
+</script>
+</body>
+</html>

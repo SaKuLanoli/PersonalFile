@@ -1,0 +1,1291 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="校园小勇士挑战赛：小学体育AI备课系统，HYROX校园挑战赛黄黑竞技风格">
+  <title>校园小勇士挑战赛 · AI备课工作台</title>
+  <style>
+    :root{
+      --yellow:#FFD100;
+      --ink:#1A1A1A;
+      --ink2:#2C2C2C;
+      --bg:#EDF0F3;
+      --card:#FFFFFF;
+      --muted:#777777;
+      --body:#333333;
+      --line:#E3E6EA;
+      --chip:#F4F5F7;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--body);font:15px/1.65 Inter,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    h1,h2,h3,h4{font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif}
+
+    /* ===== 顶部赛事 banner：炭黑底 + 斜向暗条纹 ===== */
+    .banner{
+      background:repeating-linear-gradient(135deg,var(--ink) 0 22px,var(--ink2) 22px 44px);
+      color:#fff;display:flex;align-items:center;justify-content:space-between;
+      gap:18px;padding:0 clamp(16px,3vw,34px);height:76px;
+    }
+    .banner-left{display:flex;align-items:center;gap:14px;min-width:0}
+    .logo-chip{
+      display:grid;place-items:center;width:42px;height:46px;border-radius:9px;
+      background:var(--yellow);color:var(--ink);font-size:24px;font-weight:900;
+      transform:skewX(-6deg);box-shadow:4px 4px 0 rgba(255,209,0,.22);
+    }
+    .banner h1{font-size:21px;font-weight:800;letter-spacing:.5px;margin:0;white-space:nowrap}
+    .banner .sub{margin:2px 0 0;font-size:11px;color:#B9BEC6;letter-spacing:2.5px;font-weight:600}
+    .banner-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .season-chip{
+      background:var(--yellow);color:var(--ink);font-weight:800;font-size:12px;
+      padding:5px 13px;border-radius:999px;letter-spacing:1.5px;transform:skewX(-6deg);
+    }
+    .offline-chip{
+      border:1px solid #4A4A4A;color:#CFCFCF;font-size:12px;padding:4px 12px;border-radius:999px;
+      display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.03);
+    }
+    .offline-chip i{width:7px;height:7px;border-radius:50%;background:var(--yellow);display:inline-block}
+    .offline-chip.online i{background:#5BD98B}
+    .dl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+    .dl-bar button{
+      border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:9px;
+      font-size:12.5px;font-weight:800;padding:9px 14px;transition:all .15s;cursor:pointer;
+    }
+    .dl-bar button:hover{background:var(--ink);color:var(--yellow)}
+    .yellow-bar{height:4px;background:var(--yellow)}
+
+    /* ===== 工作区：左右分栏 ===== */
+    .workspace{
+      display:grid;grid-template-columns:340px 1fr;gap:20px;
+      max-width:1440px;margin:0 auto;padding:20px clamp(14px,2.5vw,30px) 34px;
+      align-items:start;
+    }
+
+    /* ===== 左侧：课程配置面板「今天怎么上」 ===== */
+    .panel{
+      background:var(--card);border-radius:16px;position:sticky;top:20px;
+      box-shadow:0 1px 3px rgba(26,26,26,.06);display:flex;flex-direction:column;
+      max-height:calc(100vh - 40px);
+    }
+    .panel-head{
+      background:var(--ink);color:#fff;padding:15px 20px;border-bottom:3px solid var(--yellow);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:16px 16px 0 0;
+    }
+    .panel-head h2{margin:0;font-size:16px;font-weight:800;letter-spacing:.5px}
+    .panel-head .go-chip{
+      background:var(--yellow);color:var(--ink);font-size:10px;font-weight:900;font-style:italic;
+      letter-spacing:1.5px;padding:3px 10px;border-radius:999px;transform:skewX(-6deg);
+    }
+    .panel-body{padding:19px 20px;overflow-y:auto}
+    .hint{font-size:12.5px;color:var(--muted);margin:3px 0 16px}
+
+    .field{display:block;margin:0 0 13px;font-size:13px;color:var(--body)}
+    .field>span{display:block;font-weight:700;margin-bottom:6px;color:var(--ink)}
+    .field input,.field select,.field textarea{
+      width:100%;border:1.5px solid #D6DAE0;border-radius:9px;padding:9px 11px;background:#fff;color:var(--body);
+    }
+    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--ink)}
+    .twocol{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    .checks{display:flex;gap:16px;font-size:13.5px;align-items:center;flex-wrap:wrap}
+    .checks label{display:flex;gap:7px;align-items:center;font-weight:600}
+    .checks input{accent-color:var(--ink);width:15px;height:15px}
+    .btn-primary{
+      background:var(--ink);color:var(--yellow);border:none;border-radius:10px;width:100%;
+      font-size:14.5px;font-weight:800;padding:13px;margin-top:6px;transition:background .15s,transform .15s;
+    }
+    .btn-primary:hover{background:#000;transform:translateY(-1px)}
+    .notice{margin:12px 0 0;font-size:11.5px;color:var(--muted);text-align:center}
+
+    /* —— 左侧底部：小勇士教练 AI 指令条 —— */
+    .coach-zone{border-top:1px solid var(--line);padding:15px 20px 18px;background:#FAFBFC;border-radius:0 0 16px 16px}
+    .coach-title{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+    .coach-avatar{
+      width:32px;height:32px;border-radius:8px;background:var(--yellow);color:var(--ink);
+      display:grid;place-items:center;font-weight:900;font-size:15px;transform:skewX(-6deg);
+    }
+    .coach-title h3{margin:0;font-size:14px;font-weight:800}
+    .coach-title p{margin:0;font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:5px}
+    .coach-title p::before{content:"";width:5px;height:5px;border-radius:50%;background:#5BD98B}
+    .mini-chat{display:flex;flex-direction:column;gap:8px;max-height:150px;overflow-y:auto;margin-bottom:11px}
+    .mini-msg{
+      font-size:12.5px;line-height:1.6;padding:9px 12px;border-radius:11px;
+      animation:slidein .25s ease both;
+    }
+    .mini-msg.coach{background:var(--chip);color:var(--body);border-top-left-radius:4px;align-self:flex-start;max-width:95%}
+    .mini-msg.coach .hl{background:var(--yellow);color:var(--ink);font-weight:700;padding:0 4px;border-radius:3px}
+    .mini-msg.user{background:var(--ink);color:#fff;border-top-right-radius:4px;align-self:flex-end;max-width:85%}
+    @keyframes slidein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .btn-template{
+      background:var(--yellow);color:var(--ink);border:none;border-radius:10px;
+      font-weight:800;font-size:13.5px;padding:10px;width:100%;letter-spacing:.5px;
+      transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 0 rgba(26,26,26,.9);
+    }
+    .btn-template:hover{transform:translateY(-2px);box-shadow:0 4px 0 rgba(26,26,26,.9)}
+    .btn-template:active{transform:translateY(0);box-shadow:0 1px 0 rgba(26,26,26,.9)}
+    .input-row{display:flex;gap:8px;margin-top:9px}
+    .input-row input{
+      flex:1;border:1.5px solid #D6DAE0;border-radius:10px;padding:9px 12px;font-size:13px;
+      background:#fff;color:var(--body);min-width:0;
+    }
+    .input-row input:focus{outline:none;border-color:var(--ink)}
+    .input-row button{
+      background:var(--ink);color:#fff;border:none;border-radius:10px;padding:0 16px;
+      font-weight:700;font-size:13px;transition:background .15s;
+    }
+    .input-row button:hover{background:#000}
+
+    /* ===== 右侧：主工作区 ===== */
+    .main{min-width:0;display:flex;flex-direction:column;gap:18px}
+    .main-head{
+      background:var(--card);border-radius:14px;padding:8px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+      box-shadow:0 1px 3px rgba(26,26,26,.05);
+    }
+    .tabs{display:flex;gap:2px;overflow-x:auto}
+    .tab{
+      border:none;background:transparent;padding:11px 16px 12px;font-size:14px;color:var(--muted);
+      font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;transition:color .15s;
+    }
+    .tab:hover{color:var(--body)}
+    .tab.active{color:var(--ink);font-weight:800;border-color:var(--yellow)}
+    .head-actions{display:flex;gap:9px}
+    .act-btn{
+      background:var(--yellow);color:var(--ink);border:none;border-radius:9px;
+      font-size:13px;font-weight:800;padding:9px 15px;transition:transform .15s,box-shadow .15s;
+      box-shadow:0 2px 0 rgba(26,26,26,.85);
+    }
+    .act-btn:hover{transform:translateY(-1px);box-shadow:0 3px 0 rgba(26,26,26,.85)}
+    .act-btn:active{transform:translateY(0)}
+
+    .page{display:none}
+    .page.active{display:flex;flex-direction:column;gap:18px;animation:fadein .25s ease both}
+    @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    @keyframes pop{from{opacity:0;transform:translateX(-50%) scale(.92)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+
+    /* —— 二级 tab（课案/闯关卡片/成绩卡/赛季日历） —— */
+    .subtabs{display:flex;gap:8px;flex-wrap:wrap}
+    .subtab{
+      border:1.5px solid var(--line);background:var(--card);color:var(--muted);
+      font-size:13px;font-weight:700;padding:7px 16px;border-radius:999px;transition:all .15s;
+    }
+    .subtab:hover{border-color:var(--ink);color:var(--ink)}
+    .subtab.active{background:var(--yellow);border-color:var(--yellow);color:var(--ink);font-weight:800;box-shadow:0 2px 0 rgba(26,26,26,.6)}
+    .subpage{display:none}
+    .subpage.active{display:flex;flex-direction:column;gap:16px;animation:fadein .25s ease both}
+
+    .card{background:var(--card);border-radius:14px;box-shadow:0 1px 3px rgba(26,26,26,.05)}
+    .card-pad{padding:22px}
+    .eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+    .eyebrow b{color:#B8BDC4;padding:0 7px}
+    .card h2{font-size:17px;font-weight:800;margin:4px 0 10px;color:var(--ink)}
+    .card .desc{font-size:13.5px;color:var(--muted);margin:0}
+
+    /* —— 课案 hero：黑底斜纹赛事卡 —— */
+    .lesson-hero{
+      border-radius:14px;overflow:hidden;
+      background:repeating-linear-gradient(135deg,var(--ink) 0 26px,var(--ink2) 26px 52px);
+      color:#fff;padding:26px 28px;display:flex;justify-content:space-between;gap:22px;align-items:center;
+    }
+    .lesson-hero .eyebrow{color:#9BA1A9}
+    .lesson-hero .eyebrow b{color:#5F656D}
+    .title-input{
+      background:transparent;border:1.5px dashed transparent;border-radius:7px;color:var(--yellow);
+      font-family:Inter,"Microsoft YaHei",sans-serif;font-weight:800;font-size:27px;padding:3px 7px;
+      margin:7px -7px 3px;width:calc(100% + 14px);transition:border-color .15s;
+    }
+    .title-input:hover{border-color:#565B62}
+    .title-input:focus{outline:none;border-color:var(--yellow);background:rgba(255,209,0,.05)}
+    .lesson-hero p{margin:0;color:#C6CBD1;font-size:13.5px}
+    .hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px}
+    .hero-meta span{
+      font-size:12px;font-weight:700;color:#EDEFF2;background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.12);padding:4px 12px;border-radius:999px;
+    }
+    .start-tag{
+      align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+      background:var(--yellow);color:var(--ink);border-radius:11px;padding:16px 22px;
+      transform:skewX(-6deg);box-shadow:5px 5px 0 rgba(255,209,0,.18);flex-shrink:0;
+    }
+    .start-tag b{font-size:30px;font-weight:900;letter-spacing:2px;font-style:italic}
+    .start-tag small{font-size:11px;font-weight:800;letter-spacing:2px}
+
+    .section-title{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin:2px 0 -4px;padding:0 4px}
+    .section-title h3{margin:0;font-size:15.5px;font-weight:800;color:var(--ink)}
+    .section-title span{font-size:12px;color:var(--muted)}
+
+    /* —— 时间线 —— */
+    .timeline{display:flex;gap:3px;background:var(--line);border-radius:11px;overflow:hidden}
+    .timeline div{background:#fff;text-align:center;padding:13px 6px;min-width:0;flex:1}
+    .timeline div.highlight{background:var(--yellow);color:var(--ink)}
+    .timeline b{display:block;font-size:20px;font-weight:800}
+    .timeline small{font-weight:600;font-size:10px;color:var(--muted)}
+    .timeline div.highlight small{color:var(--ink2)}
+    .timeline span{display:block;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+    .timeline div.highlight span{color:var(--ink);font-weight:700}
+
+    .accordion{border-top:1px solid var(--line);padding-top:12px;font-size:13px;color:var(--muted);margin-top:16px}
+    .accordion summary{cursor:pointer;font-weight:700;color:var(--body)}
+    .accordion ul{line-height:1.9;padding-left:19px;margin:9px 0 0}
+
+    /* —— 闯关卡片（每页 6 张：3 列 × 2 行） —— */
+    .stations-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+    .station{
+      border:1.5px solid var(--line);border-radius:13px;background:#fff;padding:15px 15px 0;
+      text-align:left;transition:transform .18s ease,border-color .18s,box-shadow .18s;
+    }
+    .station:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(26,26,26,.08)}
+    .station.selected{border-color:var(--yellow);box-shadow:inset 0 0 0 1px var(--yellow),0 8px 20px rgba(255,209,0,.16)}
+    .station .n{font-size:30px;font-weight:900;font-style:italic;color:#D9DDE2;letter-spacing:-1px;line-height:1}
+    .station.selected .n{color:var(--yellow);-webkit-text-stroke:1.2px var(--ink)}
+    .station h3{font-size:15.5px;font-weight:800;margin:9px 0 2px;color:var(--ink)}
+    .station .skill{display:inline-block;font-size:11px;font-weight:800;color:var(--ink);background:var(--yellow);padding:2.5px 10px;border-radius:999px;margin:4px 0 10px}
+    .station footer{border-top:1px solid var(--line);margin-top:10px;padding:9px 0 12px;font-size:11.5px;color:var(--muted)}
+    .station .caret{float:right;color:#B8BDC4;font-size:13px;transition:transform .2s}
+    .station.selected .caret{transform:rotate(180deg);color:var(--ink)}
+    /* 点击卡片后内联展开的详情面板（占满整行） */
+    .station-expand{
+      grid-column:1/-1;background:#FFFDF2;border:1.5px solid var(--yellow);border-radius:13px;
+      padding:17px 19px;animation:fadein .22s ease both;
+    }
+    .detail-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .detail-head h3{margin:3px 0 0;font-size:19px;font-weight:800;color:var(--ink)}
+    .levels{display:flex;gap:4px;background:var(--chip);padding:3px;border-radius:9px}
+    .levels button{border:none;background:transparent;padding:6px 13px;border-radius:6px;font-size:12.5px;font-weight:700;color:var(--muted)}
+    .levels button.active{background:var(--ink);color:var(--yellow)}
+    .task{font-size:16px;font-weight:700;color:var(--ink);margin:15px 0 7px}
+    .safe{font-size:13px;color:var(--muted);margin:0}
+    .safe::before{content:"✓";display:inline-grid;place-items:center;margin-right:8px;color:var(--ink);background:var(--yellow);font-weight:900;width:17px;height:17px;border-radius:4px;font-size:11px}
+    .detail-foot{border-top:1px solid #EFE3A6;margin-top:16px;padding-top:11px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    /* 分页控件 */
+    .pager{display:flex;align-items:center;justify-content:center;gap:14px}
+    .pager button{
+      border:1.5px solid var(--line);background:var(--card);border-radius:9px;padding:8px 18px;
+      font-size:13px;font-weight:800;color:var(--ink);transition:all .15s;
+    }
+    .pager button:hover:not([disabled]){border-color:var(--ink)}
+    .pager button[disabled]{opacity:.35;cursor:default}
+    .pager .pg-info{font-size:13px;font-weight:800;color:var(--muted)}
+    .pager .pg-info b{color:var(--ink);background:var(--yellow);padding:2px 10px;border-radius:999px;margin:0 3px}
+
+    /* —— 大单元课时进度（L1-L6 微课时） —— */
+    .unit-bar{display:flex;gap:7px;flex-wrap:wrap}
+    .unit-cell{
+      flex:1;min-width:96px;border:1.5px solid var(--line);border-radius:11px;background:#fff;
+      padding:10px 12px;text-align:left;transition:all .15s;
+    }
+    .unit-cell .l{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted)}
+    .unit-cell b{display:block;font-size:13.5px;font-weight:800;color:var(--ink);margin-top:2px}
+    .unit-cell .us{display:inline-block;margin-top:6px;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px}
+    .unit-cell.done .us{background:var(--chip);color:var(--muted)}
+    .unit-cell.now{border-color:var(--yellow);box-shadow:inset 0 0 0 1px var(--yellow)}
+    .unit-cell.now .us{background:var(--yellow);color:var(--ink)}
+    .unit-cell.next .us{border:1.5px dashed #C9CED5;color:var(--muted)}
+
+    /* —— 站点筛选胶囊 —— */
+    .filter-chips{display:flex;gap:7px;flex-wrap:wrap}
+    .filter-chips button{
+      border:1.5px solid var(--line);background:var(--card);color:var(--muted);
+      font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:999px;transition:all .15s;
+    }
+    .filter-chips button:hover{border-color:var(--ink);color:var(--ink)}
+    .filter-chips button.active{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:800}
+
+    /* —— 移动端同步状态 / 奖章确认台 —— */
+    .sync-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+    .sync-icon{width:46px;height:46px;min-width:46px;border-radius:12px;background:var(--ink);color:var(--yellow);display:grid;place-items:center;font-size:21px}
+    .sync-stats{display:flex;gap:9px;flex-wrap:wrap;margin-left:auto}
+    .sync-stats span{font-size:12.5px;font-weight:800;background:var(--chip);border:1px solid var(--line);padding:5px 12px;border-radius:999px;color:var(--body)}
+    .sync-stats span.hot{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+    .medal-queue{display:flex;flex-direction:column;gap:9px;margin-top:13px}
+    .medal-row{
+      display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:11px;
+      padding:11px 14px;background:#fff;
+    }
+    .medal-row .mi{font-size:21px}
+    .medal-row b{font-size:14px;color:var(--ink);display:block}
+    .medal-row small{font-size:12px;color:var(--muted)}
+    .medal-row .confirm{
+      margin-left:auto;border:1.5px solid var(--ink);border-radius:9px;background:transparent;
+      font-size:12.5px;font-weight:800;padding:8px 16px;transition:all .15s;white-space:nowrap;
+    }
+    .medal-row .confirm:hover{background:var(--ink);color:var(--yellow)}
+    .medal-row.ok{border-color:#BFE5D2;background:#F2FAF6}
+    .medal-row.ok .confirm{border-color:#BFE5D2;background:#E4F5EC;color:var(--ok);cursor:default}
+
+    /* —— 过程性评价量表（小学4维度） —— */
+    .eval-rows{display:flex;flex-direction:column;gap:13px;margin-top:14px}
+    .eval-row .et{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:5px}
+    .eval-row .et small{color:var(--muted);font-weight:600}
+    .eval-bar{height:11px;background:var(--chip);border-radius:999px;overflow:hidden}
+    .eval-bar i{display:block;height:100%;background:var(--yellow);border-radius:999px;position:relative}
+    .eval-bar i::after{content:"";position:absolute;right:0;top:0;bottom:0;width:11px;background:var(--ink);border-radius:0 999px 999px 0}
+
+    /* —— 奖章素材墙 —— */
+    .medal-wall{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:13px}
+    .medal-cell{border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;text-align:left}
+    .medal-cell .mci{font-size:19px}
+    .medal-cell b{display:block;font-size:12.5px;color:var(--ink);margin-top:4px}
+    .medal-cell small{font-size:10.5px;color:var(--muted);line-height:1.45;display:block}
+    .medal-cell.primary{border-color:var(--yellow);background:#FFFDF2}
+
+    /* —— 成绩卡 / 赛季日历 —— */
+    .duo-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+    .pill-list{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+    .pill-list span{background:var(--chip);border:1px solid var(--line);color:var(--body);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600}
+    .pill-list span.hot{background:var(--yellow);border-color:var(--yellow);color:var(--ink);font-weight:800}
+    .gear-list{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+    .gear-list li{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;border-bottom:1px dashed var(--line);padding-bottom:8px}
+    .gear-list b{color:var(--ink)}
+    .gear-list span{color:var(--muted);text-align:right}
+    .btn-line{
+      background:transparent;border:1.5px solid var(--ink);color:var(--ink);border-radius:10px;
+      font-weight:800;font-size:14px;padding:12px;width:100%;transition:background .15s,color .15s;margin-top:6px;
+    }
+    .btn-line:hover{background:var(--ink);color:var(--yellow)}
+    .chips{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}
+    .chips span{padding:3.5px 11px;background:var(--chip);border:1px solid var(--line);color:var(--body);border-radius:999px;font-size:12px;font-weight:700}
+    .advice{padding-left:20px;line-height:1.9;margin:10px 0 0}
+    .advice li{margin-bottom:10px;font-size:13.5px}
+    .review-result{border-top:4px solid var(--yellow)}
+    .empty{margin-top:20px;border-radius:10px;background:#F5F7F9;padding:16px;font-size:13.5px;color:var(--muted)}
+
+    /* —— 课案内容板块：教学目标/安全排查/流程表/赛制/映射 —— */
+    .goal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+    .goal-card{border:1.5px solid var(--line);border-radius:12px;padding:18px;transition:transform .15s}
+    .goal-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(26,26,26,.07)}
+    .goal-card .gicon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;margin-bottom:10px}
+    .goal-card.g1 .gicon{background:#FFF3D4;color:#B8860B}
+    .goal-card.g2 .gicon{background:#E8F5E9;color:#2D9C5B}
+    .goal-card.g3 .gicon{background:#E3F2FD;color:#1976D2}
+    .goal-card h4{font-size:15px;font-weight:800;color:var(--ink);margin:0 0 6px}
+    .goal-card ul{margin:0;padding-left:18px}
+    .goal-card li{font-size:12.5px;line-height:1.7;color:var(--body)}
+
+    .ctable{width:100%;border-collapse:collapse;margin-top:14px}
+    .ctable th{background:var(--chip);font-size:11.5px;font-weight:800;color:var(--ink);padding:9px 11px;text-align:left;border-bottom:2px solid var(--line);white-space:nowrap}
+    .ctable td{padding:10px 11px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+    .ctable tr:hover td{background:#FAFBFC}
+    .ctable .cat{font-weight:800;color:var(--ink)}
+    .ck{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+    .ck-ok{background:#E8F5E9;color:#2D9C5B}.ck-ok::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+    .ck-warn{background:#FFF3E0;color:#E67E22}.ck-warn::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+
+    .ftable{width:100%;border-collapse:collapse;margin-top:14px}
+    .ftable th{background:var(--ink);color:var(--yellow);font-size:11.5px;font-weight:800;padding:11px 13px;text-align:left}
+    .ftable td{padding:11px 13px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:top}
+    .ftable .phase{font-weight:800;color:var(--ink)}
+    .ftable .dur{font-weight:800;color:var(--ink);background:var(--yellow);padding:2px 9px;border-radius:999px;font-size:11px;white-space:nowrap}
+    .ftable .main-row{background:#FFFDF2}
+    .ftag{display:inline-block;background:var(--chip);color:var(--muted);font-size:10.5px;padding:2px 7px;border-radius:4px;margin:1px 2px 1px 0}
+
+    .score-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+    .score-block{border:1.5px solid var(--line);border-radius:12px;padding:16px}
+    .score-block h4{font-size:14.5px;font-weight:800;color:var(--ink);margin:0 0 8px;display:flex;align-items:center;gap:7px}
+    .score-block h4 .em{width:24px;height:24px;border-radius:6px;background:var(--yellow);color:var(--ink);display:grid;place-items:center;font-size:12px;font-weight:900}
+    .score-block ul{margin:0;padding-left:17px}
+    .score-block li{font-size:12px;line-height:1.65}
+
+    .mtable{width:100%;border-collapse:collapse;margin-top:12px}
+    .mtable th{background:var(--chip);font-size:10.5px;font-weight:800;padding:7px 9px;text-align:left;color:var(--muted)}
+    .mtable td{padding:7px 9px;border-bottom:1px solid var(--line);font-size:12px}
+    .mtable .mi{font-size:17px}
+    .mtable .c-skill{color:#1976D2;font-weight:700}
+    .mtable .c-quality{color:#2D9C5B;font-weight:700}
+    .mtable .c-season{color:#B8860B;font-weight:700}
+
+    .map-table{width:100%;border-collapse:collapse;margin-top:14px}
+    .map-table th{background:var(--ink);color:var(--yellow);font-size:11.5px;font-weight:800;padding:11px 13px;text-align:left}
+    .map-table td{padding:10px 13px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:top}
+    .map-table .st{font-weight:800;color:var(--ink)}
+    .map-pill{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;color:var(--body);margin:1px 2px}
+    .map-pill.hot{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+    .map-lv{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:3px;margin-right:4px}
+    .map-lv.b{background:#E3F2FD;color:#1976D2}
+    .map-lv.i{background:#FFF3D4;color:#B8860B}
+    .map-lv.a{background:#FFEBEE;color:#E74C3C}
+    .map-note{background:#FFFDF2;border:1.5px solid var(--yellow);border-radius:10px;padding:13px 16px;margin-top:14px;font-size:12.5px;color:var(--body)}
+    .map-note b{color:var(--ink)}
+
+    @media(max-width:768px){
+      .goal-grid{grid-template-columns:1fr}
+      .score-grid{grid-template-columns:1fr}
+    }
+
+    .cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .cal-card{border:1.5px solid var(--line);border-radius:12px;padding:15px 16px;background:#fff;transition:transform .18s,box-shadow .18s}
+    .cal-card:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(26,26,26,.07)}
+    .cal-card .wk{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted)}
+    .cal-card h4{margin:5px 0 7px;font-size:14.5px;font-weight:800;color:var(--ink)}
+    .cal-card p{margin:0;font-size:12px;color:var(--muted)}
+    .cal-tag{display:inline-block;margin-top:9px;font-size:10.5px;font-weight:800;letter-spacing:1px;padding:3px 9px;border-radius:999px}
+    .cal-tag.now{background:var(--yellow);color:var(--ink)}
+    .cal-tag.done{background:var(--chip);color:var(--muted)}
+    .cal-tag.next{border:1.5px dashed #C9CED5;color:var(--muted)}
+
+    /* —— 课程与达标 —— */
+    .basis-head{display:flex;gap:15px;align-items:center;border-top:4px solid var(--yellow)}
+    .basis-head i{font-style:normal;font-size:26px}
+    .basis-head p{margin:3px 0 0;font-size:13.5px;color:var(--muted)}
+    .basis-row{display:flex;gap:10px;margin:16px 0}
+    .basis-row b{color:var(--ink);background:var(--yellow);width:22px;height:22px;min-width:22px;display:inline-grid;place-items:center;border-radius:5px;font-size:13px}
+    .basis-row strong{color:var(--ink)}
+    .basis-row p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+
+    .footer{max-width:1440px;margin:0 auto;padding:0 30px 26px;display:flex;justify-content:space-between;gap:10px;color:#9AA0A8;font-size:11.5px}
+    .printcards{display:none}
+
+    @media(max-width:1080px){
+      .workspace{grid-template-columns:1fr}
+      .panel{position:static;max-height:none}
+      .mini-chat{max-height:110px}
+      .duo-grid{grid-template-columns:1fr}
+      .cal-grid{grid-template-columns:repeat(2,1fr)}
+      .stations-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media(max-width:640px){
+      .banner{height:auto;padding:12px 16px;flex-wrap:wrap}
+      .banner h1{font-size:17px}
+      .lesson-hero{flex-direction:column;align-items:flex-start}
+      .start-tag{flex-direction:row;gap:12px;align-self:stretch;justify-content:flex-start}
+      .cal-grid{grid-template-columns:1fr}
+      .timeline{flex-wrap:wrap}
+      .timeline div{min-width:31%}
+    }
+    @media print{
+      .banner,.yellow-bar,.panel,.main-head,.subtabs,.accordion,.footer,.timeline-wrap,.lesson-hero{display:none!important}
+      .printcards{display:block!important}
+      .printcards section{border:1.5px solid #999;padding:12px;margin:12px 0;break-inside:avoid}
+      body{background:#fff}
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部赛事 banner -->
+  <header class="banner">
+    <div class="banner-left">
+      <div class="logo-chip">⚡</div>
+      <div>
+        <h1>校园小勇士挑战赛</h1>
+        <p class="sub">CAMPUS WARRIOR CHALLENGE · 小学体育 AI 备课系统</p>
+      </div>
+    </div>
+    <div class="banner-right">
+      <span class="season-chip">SSN 2026</span>
+      <span class="offline-chip" id="connChip"><i></i>离线演示版</span>
+    </div>
+  </header>
+  <div class="yellow-bar"></div>
+
+  <main class="workspace">
+    <!-- 左侧：课程配置面板「今天怎么上」 + 小勇士教练指令条 -->
+    <aside class="panel">
+      <div class="panel-head">
+        <h2>今天怎么上？</h2>
+        <span class="go-chip">GO!</span>
+      </div>
+      <div class="panel-body">
+        <p class="hint">告诉系统班级与教学条件，或直接问教练</p>
+        <div class="twocol">
+          <label class="field"><span>年级</span><select id="grade"><option>五年级</option><option>六年级</option></select></label>
+          <label class="field"><span>班级人数</span><input id="count" type="number" min="8" max="60" value="40"></label>
+        </div>
+        <label class="field"><span>课时长度（分钟）</span><select id="minutes"><option>35</option><option selected>40</option><option>45</option></select></label>
+        <label class="field"><span>可用场地</span><select id="place"><option>操场</option><option>室内小场地</option></select></label>
+        <label class="field"><span>本课重点</span><select id="goal"><option selected>折返与耐力</option><option>速度与协调</option><option>协调与合作</option></select></label>
+        <div class="field"><span>可用器材</span>
+          <div class="checks"><label><input id="rope" type="checkbox" checked>跳绳</label><label><input id="ball" type="checkbox" checked>软球</label></div>
+        </div>
+        <label class="checks" style="margin:2px 0 14px"><input id="light" type="checkbox">使用轻量练习节奏</label>
+        <button class="btn-primary" id="generate">✦ 生成闯关课案 →</button>
+        <p class="notice">离线规则演示 · 教师审核后实施</p>
+      </div>
+      <div class="coach-zone">
+        <div class="coach-title">
+          <span class="coach-avatar">W</span>
+          <div>
+            <h3>小勇士教练</h3>
+            <p>AI 备课助手</p>
+          </div>
+        </div>
+        <div class="mini-chat" id="miniChat"></div>
+        <button class="btn-template" id="template">⚡ 一键体验模板</button>
+        <div class="input-row">
+          <input id="chatInput" type="text" maxlength="120" placeholder="试试：36人 室内 练协作">
+          <button id="send">发送</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 右侧：主工作区 -->
+    <section class="main">
+      <div class="main-head">
+        <nav class="tabs" aria-label="工作台导航">
+          <button class="tab active" data-tab="plan">✦ 闯关备课</button>
+          <button class="tab" data-tab="review">⚑ 课后反馈</button>
+          <button class="tab" data-tab="basis">▣ 课程与达标</button>
+          <button class="tab" data-tab="cases">★ 公开课案例</button>
+        </nav>
+        <div class="head-actions">
+          <button class="act-btn" id="export">⇩ 导出文本</button>
+          <button class="act-btn" onclick="window.print()">▣ 打印任务卡</button>
+        </div>
+      </div>
+
+      <!-- 一级 Tab 1：闯关备课 -->
+      <section class="page active" id="plan">
+        <nav class="subtabs" aria-label="备课内容导航">
+          <button class="subtab active" data-sub="lesson">课案</button>
+          <button class="subtab" data-sub="cards">闯关卡片</button>
+          <button class="subtab" data-sub="score">成绩卡</button>
+          <button class="subtab" data-sub="cal">赛季日历</button>
+        </nav>
+
+        <!-- 二级：课案 -->
+        <div class="subpage active" id="lesson">
+          <div class="lesson-hero">
+            <div style="min-width:0;flex:1">
+              <div class="eyebrow">本课任务 <b>/</b> 教师可调整</div>
+              <input id="lessonTitle" class="title-input" value="校园能量补给队" aria-label="课案标题">
+              <p id="subtitle">折返与耐力 · 动作质量优先 · 小组共同完成</p>
+              <div class="hero-meta" id="meta"></div>
+            </div>
+            <div class="start-tag"><b>START</b><small>08 STATIONS</small></div>
+          </div>
+          <div class="card card-pad">
+            <div class="section-title"><h3>大单元 · 6 节微课时</h3><span>小学 2 节微课时 = 1 节传统课时</span></div>
+            <div class="unit-bar" style="margin-top:13px" id="unitBar"></div>
+          </div>
+          <div class="card card-pad timeline-wrap">
+            <div class="section-title"><h3>整堂课的节奏</h3><span>含讲解、恢复与换站</span></div>
+            <div class="timeline" id="timeline" style="margin-top:13px"></div>
+            <details class="accordion" open>
+              <summary>课案生成依据与场地安排</summary>
+              <ul id="rationale"></ul>
+              <p id="groupsText"></p>
+            </details>
+          </div>
+
+          <!-- 课案内容：连续滚动 -->
+          <div class="card card-pad" style="border-top:4px solid var(--yellow)">
+            <div class="section-title"><h3>教学目标</h3><span>核心素养三维度 · 小学版侧重参与体验</span></div>
+            <p class="desc" style="margin:6px 0 0">基于义务教育体育与健康课程标准，结合闯关赛场景设计。</p>
+            <div class="goal-grid">
+              <div class="goal-card g1"><div class="gicon">🏃</div><h4>运动能力</h4><ul><li>跑动中控制节奏与方向变换</li><li>跳绳动作协调、轻落地</li><li>上肢推撑与核心控制基础</li><li>平衡与灵敏的协调表现</li><li>8 站点连续闯关综合体能</li></ul></div>
+              <div class="goal-card g2"><div class="gicon">💚</div><h4>健康行为</h4><ul><li>课前自主热身，课后主动恢复</li><li>识别身体不适并及时报告</li><li>按健康档案匹配适宜难度</li><li>养成规律运动的习惯</li><li>了解心率与运动强度关系</li></ul></div>
+              <div class="goal-card g3"><div class="gicon">🤝</div><h4>体育品德</h4><ul><li>遵守分站轮转规则</li><li>尊重不同基础同伴的差异</li><li>为伙伴加油、提供帮助</li><li>爱护器材，主动安全提醒</li><li>坚持完赛，不轻易退出</li></ul></div>
+            </div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="section-title"><h3>安全及器械排查单</h3><span>课前 15 分钟完成 · ✓ 合格 / ⚠ 注意</span></div>
+            <table class="ctable">
+              <thead><tr><th style="width:70px">类别</th><th>排查项目</th><th style="width:90px">状态</th><th style="width:160px">备注</th></tr></thead>
+              <tbody id="safetyBody"></tbody>
+            </table>
+          </div>
+
+          <div class="card card-pad">
+            <div class="section-title"><h3>课堂流程表</h3><span>40 分钟 · 6 环节</span></div>
+            <table class="ftable">
+              <thead><tr><th style="width:60px">时段</th><th style="width:80px">环节</th><th style="width:50px">分钟</th><th>教师任务</th><th>学生活动</th><th>组织形式</th></tr></thead>
+              <tbody id="flowBody"></tbody>
+            </table>
+          </div>
+
+          <div class="card card-pad">
+            <div class="section-title"><h3>赛制与计分</h3><span>8 站点闯关 · 不设竞速排名</span></div>
+            <div class="score-grid">
+              <div class="score-block"><h4><span class="em">1</span>赛制框架</h4><p style="font-size:12.5px;margin:0 0 6px"><b>8 站点 · 分组同向轮转</b></p><ul><li>全班 40 人分 4 组（A/B/C/D），每组 10 人</li><li>8 站点各设 1 个练习位，同时开练</li><li>同向轮转（S1→S8），不交叉</li><li>每站练习 30 秒、恢复 30 秒</li><li>每人每站选 1 个难度：起步/进阶/挑战</li></ul></div>
+              <div class="score-block"><h4><span class="em">2</span>计分原则</h4><p style="font-size:12.5px;margin:0 0 6px"><b>小学版不设竞速排名</b>，参与体验为主：</p><ul><li>完赛：8 站全部完成 = 全程完赛章</li><li>PB：和自己的历史比，刷新即记录</li><li>不公布个人计时排名</li><li>小组协作分：互助 ≥ 1 次/站</li><li>安全分：全程无违规无危险动作</li></ul></div>
+            </div>
+            <div class="score-block" style="margin-top:14px">
+              <h4><span class="em">3</span>奖章体系 · 三类九枚</h4>
+              <table class="mtable">
+                <thead><tr><th style="width:28px"></th><th>名称</th><th>类别</th><th>授予标准</th><th style="width:70px">发放端</th></tr></thead>
+                <tbody id="medalBody"></tbody>
+              </table>
+            </div>
+            <div class="score-block" style="margin-top:14px">
+              <h4><span class="em">4</span>难度分级与限制</h4>
+              <ul>
+                <li><b>起步</b>：所有学生可选，动作标准基础版</li>
+                <li><b>进阶</b>：完成起步且动作稳定后可选</li>
+                <li><b>挑战</b>：进阶稳定 2 次后可选，需教师确认</li>
+                <li><b style="color:#E74C3C">难度锁定</b>：BMI ≥ 28 或伤病恢复期 → 自动锁定起步</li>
+                <li><b style="color:#E67E22">降级</b>：心率超目标 85% 持续 15 秒 → 教师干预降级或暂停</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="section-title"><h3>达标映射表</h3><span>站点训练与体测项目关联 · 非直接换算</span></div>
+            <table class="map-table">
+              <thead><tr><th style="width:36px">#</th><th>闯关站点</th><th>能力维度</th><th>关联体测项目</th><th>难度任务</th></tr></thead>
+              <tbody id="mapBody"></tbody>
+            </table>
+            <div class="map-note"><b>⚠ 重要说明：</b>达标映射表仅标示站点训练与体测项目的关联方向，<b>不等于</b>课堂成绩可直接换算为正式体测成绩。正式体测须按《国家学生体质健康标准》独立组织，按年级、性别查表评分。BMI 和肺活量不从课堂表现推算。</div>
+          </div>
+        </div>
+
+        <!-- 二级：闯关卡片 -->
+        <div class="subpage" id="cards">
+          <div class="section-title"><h3>八个站点，一条路线</h3><span>点击卡片展开分层任务 · 再点收起</span></div>
+          <div class="filter-chips" id="filterChips"></div>
+          <div class="stations-grid" id="stationsGrid"></div>
+          <div class="pager" id="pager"></div>
+        </div>
+
+        <!-- 二级：成绩卡 -->
+        <div class="subpage" id="score">
+          <div class="card card-pad" style="border-top:4px solid var(--yellow)">
+            <div class="eyebrow">课堂成长与正式体测 · 分别记录</div>
+            <h2>对准能力，不把游戏分当体测分</h2>
+            <p class="desc">本演示用于备课与教学体验，不生成官方体测成绩，不承诺升学资格或达标结果。</p>
+            <div class="pill-list"><span>BMI</span><span>肺活量</span><span>50米跑</span><span>坐位体前屈</span><span class="hot">1分钟跳绳</span><span>1分钟仰卧起坐</span><span class="hot">50米×8往返跑</span></div>
+            <p class="desc">正式成绩须按标准组织测试，并依年级、性别查表；BMI 和肺活量不从课堂表现推算。</p>
+          </div>
+          <div class="card card-pad">
+            <div class="eyebrow">本课教具清单</div>
+            <h2>出发前，清点装备</h2>
+            <ul class="gear-list" id="gearList"></ul>
+          </div>
+          <div class="card card-pad">
+            <div class="eyebrow">奖章素材包 · 三类九枚</div>
+            <h2>小学版：体验章与素养章优先</h2>
+            <p class="desc">不设竞速排名，奖励参与、坚持与互助；黄色高亮为小学版主力章，其余两枚由课后 Web 端评定。</p>
+            <div class="medal-wall">
+              <div class="medal-cell primary"><span class="mci">🚀</span><b>首闯启航章</b><small>第一次完整闯关 · 移动端</small></div>
+              <div class="medal-cell primary"><span class="mci">💪</span><b>坚毅坚持章</b><small>全程坚持未退出 · 移动端</small></div>
+              <div class="medal-cell primary"><span class="mci">🏁</span><b>全程完赛章</b><small>完整 8 站完成 · 移动端</small></div>
+              <div class="medal-cell"><span class="mci">🛡</span><b>安全守护章</b><small>主动提醒同伴安全 · 课后评定</small></div>
+              <div class="medal-cell"><span class="mci">🤝</span><b>协作互助章</b><small>帮助同伴 ≥ 1 次 · 课后评定</small></div>
+              <div class="medal-cell"><span class="mci">⭐</span><b>基础通关章</b><small>基础难度完成 ≥ 6 站 · 移动端</small></div>
+              <div class="medal-cell"><span class="mci">🏅</span><b>进阶突破章</b><small>进阶难度完成 ≥ 6 站 · 移动端</small></div>
+              <div class="medal-cell"><span class="mci">🎖</span><b>挑战勇者章</b><small>挑战难度完成 ≥ 7 站 · 移动端</small></div>
+              <div class="medal-cell"><span class="mci">🌟</span><b>PB 刷新章</b><small>和自己的历史比 · V1.5 小程序</small></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 二级：赛季日历 -->
+        <div class="subpage" id="cal">
+          <div class="card card-pad" style="border-top:4px solid var(--yellow)">
+            <div class="eyebrow">SSN 2026 · 秋季赛季</div>
+            <h2>八周赛季进度</h2>
+            <p class="desc">分站轮转只是体育课的一个环节，学校应统筹课内外、校内外的综合体育活动时间。</p>
+            <div class="cal-grid" style="margin-top:16px" id="calGrid"></div>
+          </div>
+          <div class="duo-grid">
+            <div class="card card-pad">
+              <div class="eyebrow">活动衔接</div>
+              <h2>课堂连接日常运动</h2>
+              <p class="desc">赛季周期与国家体质健康测试窗口错峰安排，课堂侧重动作质量与合作，测前两周进入体测专项熟悉期。</p>
+            </div>
+            <div class="card card-pad">
+              <div class="eyebrow">小初衔接</div>
+              <h2>建立运动习惯与能力基础</h2>
+              <p class="desc">不预设统一"小升初体育入学考试"。本工具重点支持体能、动作、协作与自主锻炼习惯的培养；当地要求需另行核实。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 一级 Tab 2：课后反馈 -->
+      <section class="page" id="review">
+        <div class="card card-pad sync-card" style="border-top:4px solid var(--yellow)">
+          <span class="sync-icon">☁</span>
+          <div>
+            <div class="eyebrow">移动端课堂数据 · 已自动同步</div>
+            <h2 style="margin:2px 0 0">五(2)班 · L3 校园能量补给队</h2>
+            <p class="desc" style="margin-top:3px">回到 Wi-Fi 后由移动端打包回传，含签到 / 奖章 / 站点打卡 / 课中反馈记录。</p>
+          </div>
+          <div class="sync-stats">
+            <span>签到 40/40</span><span>见习 1</span><span class="hot">奖章待确认 3</span><span>课中反馈 1 份</span><span>应急事件 0</span>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="section-title"><h3>奖章确认台</h3><span>确认后计入成长手册</span></div>
+          <div class="medal-queue" id="medalQueue"></div>
+        </div>
+        <div class="duo-grid">
+          <div class="card card-pad">
+            <div class="eyebrow">移动端课中反馈 · 已同步快照</div>
+            <h2>这堂课，孩子们感觉如何？</h2>
+            <p class="desc" style="margin-bottom:12px">由教师在移动端完赛时收集（30 秒单选），此处只读展示，不重复录入。</p>
+            <div class="chips"><span>大部分主动参与</span><span>疲劳：适中</span><span>等待：较少</span></div>
+            <label class="field" style="margin-top:6px"><span>教师观察补录（选填）</span><textarea id="note" rows="3" maxlength="500" placeholder="例如：多数孩子能提前减速，转向时仍需提醒。"></textarea></label>
+            <button class="btn-line" id="reflect">✦ 生成教学复盘</button>
+          </div>
+          <div class="card card-pad review-result">
+            <div class="eyebrow">复盘建议</div>
+            <h2 id="reviewTitle">让反馈变成下一步行动</h2>
+            <div id="reviewContent">
+              <p class="desc">结合移动端课中反馈与教师观察，生成下一课的调整建议。</p>
+              <p class="empty">课中反馈 → 教师补录 → 教学建议 → 下一课案</p>
+            </div>
+          </div>
+        </div>
+          <div class="card card-pad">
+            <div class="eyebrow">F7 教学物料包下载</div>
+            <h2>一键下载，省去手工制作</h2>
+            <p class="desc" style="margin-bottom:0">从后端实时生成 PDF / Excel / SVG，数据来自数据库。</p>
+            <div class="dl-bar">
+              <button id="dlHandbook">📄 学生成长手册</button>
+              <button id="dlPbCard">📋 PB记录卡</button>
+              <button id="dlEvalXlsx">📊 评价量表Excel</button>
+              <button id="dlEvalCsv">📊 评价量表CSV</button>
+              <button id="dlMedalSvg">🏅 奖章素材包</button>
+              <button id="dlScripts">💬 引导话术库</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="page" id="basis">
+        <article class="card card-pad basis-head">
+          <i>✓</i>
+          <div>
+            <h2>课堂成长与正式体测，分别记录</h2>
+            <p>本演示用于备课与教学体验，不生成官方体测成绩，不承诺升学资格或达标结果。</p>
+          </div>
+        </article>
+        <div class="duo-grid">
+          <article class="card card-pad">
+            <div class="eyebrow">课程目标</div>
+            <h2>学会运动，也学会合作</h2>
+            <div class="basis-row"><b>✓</b><div><strong>运动能力</strong><p>练习跑、跳、投与平衡，关注动作质量和适宜负荷。</p></div></div>
+            <div class="basis-row"><b>✓</b><div><strong>健康行为</strong><p>主动热身、合理恢复，识别不适并及时报告。</p></div></div>
+            <div class="basis-row" style="margin-bottom:0"><b>✓</b><div><strong>体育品德</strong><p>遵守规则、尊重差异，为伙伴提供支持。</p></div></div>
+          </article>
+          <article class="card card-pad">
+            <div class="eyebrow">五六年级 · 国家体测项目</div>
+            <h2>对准能力，不把游戏分当体测分</h2>
+            <div class="pill-list"><span>BMI</span><span>肺活量</span><span>50米跑</span><span>坐位体前屈</span><span class="hot">1分钟跳绳</span><span>1分钟仰卧起坐</span><span class="hot">50米×8往返跑</span></div>
+            <p class="desc">正式成绩须按标准组织测试，并依年级、性别查表；BMI 和肺活量不从课堂表现推算。</p>
+          </article>
+          <article class="card card-pad">
+            <div class="eyebrow">过程性评价量表 · 小学四维度</div>
+            <h2>参与和体验优先，不拼速度</h2>
+            <div class="eval-rows">
+              <div class="eval-row"><div class="et"><span>课堂参与（出勤 + 角色）</span><small>40%</small></div><div class="eval-bar"><i style="width:40%"></i></div></div>
+              <div class="eval-row"><div class="et"><span>完赛体验（动作完整度 + 游戏参与）</span><small>30%</small></div><div class="eval-bar"><i style="width:30%"></i></div></div>
+              <div class="eval-row"><div class="et"><span>同伴反馈（互助 · 加油 · 安全提醒）</span><small>20%</small></div><div class="eval-bar"><i style="width:20%"></i></div></div>
+              <div class="eval-row"><div class="et"><span>安全与品德（遵纪律 · 爱护器材）</span><small>10%</small></div><div class="eval-bar"><i style="width:10%"></i></div></div>
+            </div>
+            <p class="desc" style="margin-top:13px">小学版不引入 PB 计时排名；量表自动折算平时分，仅作过程性参考，不直接对接中考。</p>
+          </article>
+          <article class="card card-pad">
+            <div class="eyebrow">学生健康档案 · 摘要</div>
+            <h2>安全是第一前提</h2>
+            <div class="pill-list"><span>全班 40 人</span><span class="hot">家长知情同意 38/40</span><span>见习 1（脚踝恢复）</span><span>BMI 关注 1</span></div>
+            <p class="desc">BMI 偏高或伤病学生默认锁定基础难度；健康档案属敏感信息，本地加密存储，收集须家长同意。</p>
+            <button class="btn-line" id="exportReport">⇩ 导出学期报表（演示版）</button>
+          </article>
+          <article class="card card-pad">
+            <div class="eyebrow">活动衔接</div>
+            <h2>课堂连接日常运动</h2>
+            <p class="desc">分站轮转只是体育课的一个环节。学校应统筹课内外、校内外的综合体育活动时间。</p>
+          </article>
+          <article class="card card-pad">
+            <div class="eyebrow">小初衔接</div>
+            <h2>建立运动习惯与能力基础</h2>
+            <p class="desc">不预设统一"小升初体育入学考试"。本工具重点支持体能、动作、协作与自主锻炼习惯的培养；当地要求需另行核实。</p>
+          </article>
+        </div>
+      </section>
+      <!-- 一级 Tab 4：公开课案例库 -->
+      <section class="page" id="cases">
+        <div class="card card-pad" style="border-top:4px solid var(--yellow)">
+          <div class="eyebrow">F10 · 公开课案例库</div>
+          <h2>九套现成案例，一键复用</h2>
+          <p class="desc">覆盖小学/初中/高中三个学段，含教案 PDF、视频、反思成果。</p>
+          <div class="cal-grid" style="margin-top:16px" id="caseGrid"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>⚡ 校园小勇士挑战赛 · 教师端 v1.1.0（已对接后端 API）</span>
+    <span>无需网络 · 刷新后重置</span>
+  </footer>
+  <div class="printcards" id="printcards"></div>
+
+  <script>
+  (()=>{
+    const $=id=>document.getElementById(id);
+    let lesson;
+
+    /* ========== API 集成层 ========== */
+    const API = window.location.pathname.startsWith('/app') ? '/api' : 'http://localhost:3000/api';
+    const DEMO={PLAN:'P-DEMO-001',LESSON:'L-DEMO-3',CLASS:'C-DEMO-5-2',STUDENT:'STU-5-2-01',TEACHER:'T-DEMO-001'};
+    let TOKEN='',TEACHER=null,online=false;
+
+    async function api(path,{method='GET',body}={}){
+      const h={'Content-Type':'application/json'};
+      if(TOKEN)h.Authorization='Bearer '+TOKEN;
+      try{
+        const r=await fetch(API+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
+        const ct=r.headers.get('content-type')||'';
+        if(ct.includes('json')){const j=await r.json();return{ok:j.ok!==false,status:r.status,...j};}
+        return{ok:r.ok,status:r.status,_blob:await r.blob()};
+      }catch(e){return{ok:false,error:e.message};}
+    }
+    async function ensureLogin(){
+      const r=await api('/auth/login',{method:'POST',body:{phone:'13800000001'}});
+      if(r.ok&&r.data?.token){TOKEN=r.data.token;TEACHER=r.data.teacher||{};online=true;
+        const chip=$('connChip');chip.classList.add('online');chip.innerHTML='<i></i>已连接后端';
+        return true;
+      }
+      return false;
+    }
+    async function dlBlob(path,filename){
+      try{
+        const r=await fetch(API+path,{headers:{Authorization:'Bearer '+TOKEN}});
+        const blob=await r.blob();
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        toast(`${filename} 已下载`);
+      }catch(e){toast('下载失败：'+e.message);}
+    }
+    async function dlJson(path){
+      const r=await api(path);return r;
+    }
+
+    /* ========== 从后端加载真实数据 ========== */
+    async function loadPlanFromApi(){
+      const r=await api('/plans/'+DEMO.PLAN);
+      if(!r.ok||!r.data)return null;
+      return r.data;
+    }
+    async function loadLessonPackage(){
+      const r=await api('/mobile/lessons/'+DEMO.LESSON+'/package?teacherId='+DEMO.TEACHER);
+      if(!r.ok||!r.data)return null;
+      return r.data;
+    }
+    async function loadMedalQueue(){
+      const r=await api('/feedback/lessons/'+DEMO.LESSON+'/medals');
+      if(!r.ok||!r.data)return[];
+      return r.data;
+    }
+    async function loadLessonSummary(){
+      const r=await api('/feedback/lessons/'+DEMO.LESSON+'/summary');
+      if(!r.ok||!r.data)return null;
+      return r.data;
+    }
+    async function loadClassEval(){
+      const r=await api('/evaluation/classes/'+DEMO.CLASS+'/evaluate');
+      if(!r.ok||!r.data)return null;
+      return r.data;
+    }
+    async function loadCases(){
+      const r=await api('/cases');
+      if(!r.ok||!r.data)return[];
+      return r.data;
+    }
+    async function loadHealthAlerts(){
+      const r=await api('/mobile/classes/'+DEMO.CLASS+'/health-alerts');
+      if(!r.ok||!r.data)return[];
+      return r.data;
+    }
+
+    /* ========== 将 API 课案数据适配为前端 lesson 结构 ========== */
+    function adaptLesson(pkg,plan){
+      if(!pkg)return null;
+      const les=pkg.lesson;
+      return{
+        title:les.title||'校园能量补给队',
+        c:{grade:'五年级',count:40,minutes:40,place:'操场',goal:'折返与耐力',rope:true,ball:true,light:false},
+        groups:[{name:'A',size:10},{name:'B',size:10},{name:'C',size:10},{name:'D',size:10}],
+        // 闯关卡片固定使用本地 STATIONS（教师手定的 8 站内容），不受后端数据覆盖
+        stations:STATIONS,
+        rationale:[
+          '按单向分道安排移动站，教师确认缓冲区和视线。',
+          '40人分为4组，每组10人；8个站点各准备1个并行练习位。',
+          '示例节奏：练习30秒、恢复30秒；根据现场动作和状态调整。',
+          '每个练习位保持足够间距，避免单人排队接力。'
+        ]
+      };
+    }
+
+    /* ========== 渲染后端同步数据 ========== */
+    async function renderSyncData(){
+      // 课后反馈页：课堂数据汇总
+      const summary=await loadLessonSummary();
+      if(summary){
+        const sc=document.querySelector('.sync-stats');
+        if(sc){
+          sc.innerHTML=`<span>签到 ${summary.signInCount||0}/${summary.totalCount||40}</span>
+            <span>见习 ${summary.absentCount||0}</span>
+            <span class="hot">奖章待确认 ${summary.pendingMedals||0}</span>
+            <span>课中反馈 ${summary.feedbackCount||0} 份</span>
+            <span>应急事件 ${summary.emergencyCount||0}</span>`;
+        }
+      }
+      // 奖章确认台
+      const medals=await loadMedalQueue();
+      if(medals.length>0){
+        medalQ=medals.map(m=>({
+          id:m.id,
+          icon:m.icon||m.medal_icon||'🏅',
+          name:m.medal_name||m.name||'奖章',
+          to:m.student_name||'—',
+          from:(m.source||'移动端')+' · '+(m.reason||'完赛'),
+          ok:false
+        }));
+        renderMedalQ();
+      }
+      // 评价量表
+      const evalData=await loadClassEval();
+      if(evalData&&evalData.students){
+        renderEvalData(evalData);
+      }
+    }
+
+    function renderEvalData(data){
+      // 更新评价量表页面
+      const evalRows=document.querySelector('.eval-rows');
+      if(evalRows&&data.dimensions){
+        evalRows.innerHTML=data.dimensions.map(d=>`
+          <div class="eval-row">
+            <div class="et"><span>${d.name}（${d.weight?'权重'+Math.round(d.weight*100)+'%':'参考'}）</span><small>${d.avg_score?(d.avg_score*100).toFixed(0)+'%':'—'}</small></div>
+            <div class="eval-bar"><i style="width:${d.avg_score?Math.round(d.avg_score*100):0}%"></i></div>
+          </div>
+        `).join('');
+      }
+      // 更新健康档案摘要
+      const pills=document.querySelector('#basis .pill-list');
+      if(pills&&data.class){
+        pills.innerHTML=`<span>全班 ${data.class.total_students||40} 人</span>
+          <span class="hot">家长知情同意 ${data.class.consent_count||38}/${data.class.total_students||40}</span>
+          <span>见习 ${data.class.absent_count||1}</span>
+          <span>BMI 关注 ${data.class.bmi_alert_count||1}</span>`;
+      }
+    }
+
+    /* ========== 渲染公开课案例库 ========== */
+    async function renderCases(){
+      const cases=await loadCases();
+      if(cases.length===0)return;
+      $('caseGrid').innerHTML=cases.map(c=>`
+        <div class="cal-card" data-case="${c.id}" style="cursor:pointer">
+          <div class="wk">${c.track==='primary_school'?'小学':c.track==='middle_school'?'初中':'高中'} · ${c.grade||''}</div>
+          <h4>${c.title}</h4>
+          <p>${c.plan_summary?c.plan_summary.slice(0,40)+'...':'—'}</p>
+          <span class="cal-tag now">${c.views||0} 浏览</span>
+        </div>
+      `).join('');
+      document.querySelectorAll('[data-case]').forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.case;
+        await dlBlob('/cases/'+id+'/plan.pdf','公开课教案-'+id+'.pdf');
+      });
+    }
+
+    /* ========== F7 物料下载按钮 ========== */
+    function wireDownloads(){
+      $('dlHandbook').onclick=()=>dlBlob('/materials/students/'+DEMO.STUDENT+'/handbook.pdf','学生成长手册.pdf');
+      $('dlPbCard').onclick=()=>dlBlob('/materials/lessons/'+DEMO.LESSON+'/pb-card.pdf','PB记录卡.pdf');
+      $('dlEvalXlsx').onclick=()=>dlBlob('/materials/classes/'+DEMO.CLASS+'/evaluation?format=xlsx','评价量表.xlsx');
+      $('dlEvalCsv').onclick=()=>dlBlob('/materials/classes/'+DEMO.CLASS+'/evaluation?format=csv','评价量表.csv');
+      $('dlMedalSvg').onclick=()=>dlBlob('/materials/medals/contact-sheet.svg','奖章素材包.svg');
+      $('dlScripts').onclick=async()=>{
+        const r=await dlJson('/materials/scripts');
+        if(r.ok&&r.data){
+          const text=JSON.stringify(r.data,null,2);
+          const blob=new Blob([text],{type:'application/json'});
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement('a');a.href=url;a.download='引导话术库.json';a.click();
+          setTimeout(()=>URL.revokeObjectURL(url),1000);
+          toast('引导话术库已下载');
+        }
+      };
+    }
+
+    /* ---------- 数据与生成逻辑 ---------- */
+    const cfg=()=>({grade:$('grade').value,count:+$('count').value,minutes:+$('minutes').value,place:$('place').value,goal:$('goal').value,rope:$('rope').checked,ball:$('ball').checked,light:$('light').checked});
+    /* ========== 八个站点 · 本地写定（闯关备课-闯关卡片） ========== */
+    const STATIONS=[
+      {name:'折返能量补给站',skill:'折返跑 · 心肺',equipment:'标志桶 ×6',content:'听到口令快速跑到标志物折返，控制急停变向动作，保持身体稳定；每组依次接力，完成一轮折返，锻炼心肺耐力与变向移动能力。',safe:'成功完成3次标准折返即为打卡成功，不能抢跑。',levels:['完成3次标准折返，控制急停变向','连续完成5次标准折返，保持节奏','连续完成8次折返，全程稳定不抢跑'],link:'50米×8往返跑：折返耐力基础'},
+      {name:'跳绳活力站',skill:'连续并脚跳绳 · 心肺',equipment:'跳绳（每练习位1根）',content:'原地连续并脚跳绳，保持节奏，手脚协调；单次持续30秒，重点练习连续跳跃，提升下肢耐力与协调性。',safe:'连续完成30次跳绳不中断，即可打卡通关。',levels:['连续完成20次跳绳','连续完成30次跳绳不中断','连续完成50次跳绳且节奏稳定'],link:'1分钟跳绳：动作节奏基础'},
+      {name:'侧向滑步障碍站',skill:'侧向滑步 · 灵敏',equipment:'标志桶 ×6',content:'身体侧对标志物，保持低重心，左右侧向滑步绕过标志桶，不要踩到边线；锻炼灵敏性与横向移动控制。',safe:'平稳滑步绕过全部障碍，不碰倒标志桶，打卡完成。',levels:['平稳滑步绕过2个标志桶','平稳滑步绕过全部4个标志桶','全程不碰倒、不踩边线，并加转身动作'],link:'灵敏协调 · 横向移动控制'},
+      {name:'跨步跳冲刺站',skill:'跨步跳 · 下肢',equipment:'标志物（标定距离）',content:'大步向前跨步跳，一腿蹬伸、一腿向前抬，保持上半身稳定，连续完成5组跨步跳；发展下肢力量与连续移动能力。',safe:'动作标准连贯，不弯腰驼背，完成即打卡。',levels:['连续完成3组跨步跳','连续完成5组跨步跳','连续完成8组跨步跳且上半身稳定'],link:'下肢力量 · 连续移动能力'},
+      {name:'高抬腿唤醒站',skill:'原地高抬腿 · 心肺',equipment:'无需器材',content:'原地快速高抬腿，大腿抬至接近水平，摆臂配合节奏；持续25秒，提升心肺功能与动作频率。',safe:'保持规范姿势坚持到计时结束，打卡成功。',levels:['坚持15秒保持节奏','坚持25秒保持规范姿势','坚持40秒且大腿接近水平'],link:'心肺功能 · 动作频率'},
+      {name:'弓步移动挑战站',skill:'行进间弓步走 · 下肢',equipment:'标志线 / 标志桶',content:'向前行进弓步，前腿屈膝不超过脚尖，保持躯干直立，连续弓步前进；锻炼下肢力量与身体平衡。',safe:'走完规定距离，动作不变形，完成打卡。',levels:['完成5米弓步走','完成10米弓步走','完成15米弓步走且躯干稳定'],link:'下肢力量 · 身体平衡'},
+      {name:'短距离加速跑站',skill:'短距离直线加速跑 · 心肺',equipment:'标志物（起点+终点）',content:'从站立姿态逐步加速向前跑，终点平稳减速，不紧急刹车；体会加速节奏，发展直线奔跑能力。',safe:'平稳加速、安全减速，顺利到达终点即可打卡。',levels:['完成20米平稳加速跑','完成30米加速+安全减速','完成40米加速且节奏稳定'],link:'50米跑：直线奔跑基础'},
+      {name:'绕桩灵敏穿梭站',skill:'障碍绕跑 · 灵敏',equipment:'标志桶 ×6',content:'沿着标志桶S形绕跑，控制跑动速度，灵活变向穿梭；提升变向跑动、空间判断能力。',safe:'S形穿梭全程不碰倒桶，顺利完成路线打卡。',levels:['S形绕跑1趟不碰桶','S形绕跑2趟不碰桶','S形绕跑3趟不碰桶且节奏流畅'],link:'50米跑 · 灵敏与变向'}
+    ];
+    function make(c,feed){
+      if(!Number.isInteger(c.count)||c.count<8||c.count>60)throw Error('班级人数请输入 8—60 的整数。');
+      let indoor=c.place==='室内小场地',low=c.light||feed?.fatigue==='偏高',
+      gcount=Math.ceil(c.count/(feed?.waiting==='较多'?4:5)),
+      groups=Array.from({length:gcount},(_,i)=>({name:String.fromCharCode(65+i),size:Math.floor(c.count/gcount)+(i<c.count%gcount?1:0)}));
+      return{c,groups,stations:STATIONS,title:'校园能量补给队',
+      rationale:[indoor?'小场地已替换部分奔跑与跳绳任务，禁止穿行追逐。':'按单向分道安排移动站，教师确认缓冲区和视线。',
+      `${c.count}人分为${gcount}组，每组${Math.min(...groups.map(x=>x.size))}—${Math.max(...groups.map(x=>x.size))}人；8 个站点各准备${Math.ceil(gcount/8)||1}个并行练习位。`,
+      low?'采用轻量节奏：练习20秒、恢复40秒；教师可随时继续下调。':'示例节奏：练习30秒、恢复30秒；根据现场动作和状态调整。',
+      feed?.waiting==='较多'?'根据上课反馈缩小小组；空间不足时改为教师带领的全班同练。':'每个练习位保持足够间距，避免单人排队接力。']};
+    }
+
+    /* ---------- 渲染 ---------- */
+    const PAGE_SIZE=6;
+    let pageIdx=0,expanded=null,filterCat='全部';
+    const lvMap={};
+    const lvOf=i=>lvMap[i]??1;
+    function render(){
+      $('lessonTitle').value=lesson.title;
+      $('subtitle').textContent=lesson.c.goal+' · 动作质量优先 · 小组共同完成';
+      $('meta').innerHTML=`<span>♟ ${lesson.c.count}人 / ${lesson.groups.length}组</span><span>◷ ${lesson.c.minutes}分钟 · 8站点</span><span>⌖ ${lesson.c.place}</span>`;
+      let parts=[['3','状态确认',1],['5','动态热身',1],['6','示范学练',1],[String(lesson.c.minutes-24),'分站轮转',3],['5','合作运用',1],['5','放松反馈',1]];
+      $('timeline').innerHTML=parts.map((x,i)=>`<div class="${i===3?'highlight':''}" style="flex:${x[2]}"><b>${x[0]}<small>分钟</small></b><span>${x[1]}</span></div>`).join('');
+      $('rationale').innerHTML=lesson.rationale.map(x=>`<li>${x}</li>`).join('');
+      $('groupsText').textContent='组别：'+lesson.groups.map(x=>x.name+'组'+x.size+'人').join(' · ')+'。各站点同向轮转，教师确认动线不交叉。';
+      pageIdx=0;expanded=null;
+      renderFilter();renderCards();
+      $('gearList').innerHTML=lesson.stations.map(s=>`<li><b>${s.name}</b><span>${s.equipment}</span></li>`).join('')+`<li><b>轮转组织</b><span>${lesson.groups.length}组 · 同向换站</span></li>`;
+      $('printcards').innerHTML=lesson.stations.map((s,i)=>`<section><h2>0${i+1} ${s.name}</h2><p>器材：${s.equipment}</p><p>${s.safe}</p>${s.levels.map((x,j)=>`<p>${['起步','进阶','挑战'][j]}：${x}</p>`).join('')}<p>${s.link}</p></section>`).join('');
+    }
+    /* 站点能力维度筛选（PRD 站点库检索） */
+    function renderFilter(){
+      const cats=['全部','心肺','上肢','下肢','核心','灵敏','协作','平衡'];
+      $('filterChips').innerHTML=cats.map(c=>{
+        const n=c==='全部'?lesson.stations.length:lesson.stations.filter(s=>s.skill.includes(c)).length;
+        return `<button class="${c===filterCat?'active':''}" data-cat="${c}">${c} · ${n}</button>`;
+      }).join('');
+      document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{
+        filterCat=b.dataset.cat;pageIdx=0;expanded=null;
+        renderFilter();renderCards();
+      });
+    }
+    /* 闯关卡片：筛选 + 每页 6 张 + 点击卡片内联展开分层任务 */
+    function renderCards(){
+      const list=lesson.stations.map((s,i)=>({s,gi:i})).filter(x=>filterCat==='全部'||x.s.skill.includes(filterCat));
+      const total=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+      if(pageIdx>=total)pageIdx=0;
+      const start=pageIdx*PAGE_SIZE;
+      let html='';
+      list.slice(start,start+PAGE_SIZE).forEach(({s,gi})=>{
+        html+=`<button class="station ${gi===expanded?'selected':''}" data-station="${gi}"><span class="caret">▾</span><div class="n">0${gi+1}</div><h3>${s.name}</h3><span class="skill">${s.skill}</span><footer>${s.equipment}</footer></button>`;
+        if(gi===expanded)html+=expandHtml(s,gi);
+      });
+      $('stationsGrid').innerHTML=html;
+      $('pager').innerHTML=total>1?`<button id="pgPrev" ${pageIdx===0?'disabled':''}>‹ 上一页</button><span class="pg-info">第 <b>${pageIdx+1}</b> / ${total} 页 · 共 ${list.length} 站</span><button id="pgNext" ${pageIdx===total-1?'disabled':''}>下一页 ›</button>`:'';
+      document.querySelectorAll('[data-station]').forEach(b=>b.onclick=()=>{
+        const i=+b.dataset.station;
+        expanded=(expanded===i)?null:i;
+        renderCards();
+      });
+      document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{
+        lvMap[+b.dataset.for]=+b.dataset.lv;
+        renderCards();
+      });
+      if(total>1){
+        $('pgPrev').onclick=()=>{pageIdx--;expanded=null;renderCards();};
+        $('pgNext').onclick=()=>{pageIdx++;expanded=null;renderCards();};
+      }
+    }
+    function expandHtml(s,gi){
+      return `<div class="station-expand"><div class="detail-head"><div><div class="eyebrow">站点 0${gi+1} / 课标动作：${s.skill.split('·')[0].trim()}</div><h3>${s.name}</h3></div><div class="levels">${[0,1,2].map(l=>`<button data-lv="${l}" data-for="${gi}" class="${l===lvOf(gi)?'active':''}">${['起步','进阶','挑战'][l]}</button>`).join('')}</div></div><p class="task" style="white-space:normal;line-height:1.7">练习内容：${s.content||s.levels[lvOf(gi)]}</p><p class="safe">${s.safe}</p><div class="detail-foot"><span>${s.link}</span><span>难度可选 · 不做公开能力分组 · 再点卡片收起</span></div></div>`;
+    }
+    function renderCal(){
+      const weeks=[['WEEK 1','赛季启动','体态评估与规则共建','done'],['WEEK 2','耐力基础','折返跑动作模式建立','done'],['WEEK 3','速度协调','起跑反应与绳感练习','done'],['WEEK 4','首轮挑战','四站点完整轮转测试','now'],['WEEK 5','协作专项','伙伴任务与策略共创','next'],['WEEK 6','体测熟悉','国家体测项目动作熟悉','next'],['WEEK 7','综合演练','全流程模拟 + 自选挑战','next'],['WEEK 8','赛季决赛','班级挑战赛与颁奖复盘','next']];
+      $('calGrid').innerHTML=weeks.map(w=>`<div class="cal-card"><div class="wk">${w[0]}</div><h4>${w[1]}</h4><p>${w[2]}</p><span class="cal-tag ${w[3]}">${w[3]==='now'?'● 进行中':w[3]==='done'?'已完成':'待开始'}</span></div>`).join('');
+    }
+    /* 大单元 6 节微课时进度（PRD A2：4 练习 + 1 完整闯关 + 1 展示赛） */
+    function renderUnit(){
+      const units=[['L1','热身启程','done'],['L2','动作银行','done'],['L3','能量补给','now'],['L4','协作联盟','next'],['L5','完整闯关','next'],['L6','班级展示赛','next']];
+      $('unitBar').innerHTML=units.map(u=>`<div class="unit-cell ${u[2]}"><div class="l">${u[0]}</div><b>${u[1]}</b><span class="us">${u[2]==='now'?'● 本课时':u[2]==='done'?'已完成':'待开始'}</span></div>`).join('');
+    }
+    /* 奖章确认台（PRD F2：移动端派发 → Web 端确认） */
+    let medalQ=[
+      {icon:'💪',name:'坚毅坚持章',to:'王小雨',from:'移动端 · S04 气球护送 · 全程未退出',ok:false},
+      {icon:'🤝',name:'协作互助章',to:'李跳跳（见习 · 安全员）',from:'移动端 · 课中帮助同伴 2 次',ok:false},
+      {icon:'🚀',name:'首闯启航章',to:'张小曦',from:'移动端 · 完赛归档 · 首次完整闯关',ok:false}
+    ];
+    function renderMedalQ(){
+      $('medalQueue').innerHTML=medalQ.map((m,i)=>`<div class="medal-row ${m.ok?'ok':''}"><span class="mi">${m.icon}</span><div><b>${m.name} → ${m.to}</b><small>${m.from}</small></div><button class="confirm" ${m.ok?'disabled':''} data-q="${i}">${m.ok?'✓ 已确认':'确认发放'}</button></div>`).join('');
+      const pend=medalQ.filter(m=>!m.ok).length;
+      document.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{
+        const i=+b.dataset.q;
+        const m=medalQ[i];
+        // 调用后端确认 API
+        if(online&&m.id){
+          const r=await api('/feedback/medals/confirm',{method:'POST',body:{medalIds:[m.id],confirmed:true}});
+          if(!r.ok){toast('确认失败：'+(r.error?.message||'未知错误'));return;}
+        }
+        medalQ[i].ok=true;renderMedalQ();
+        toast(pend-1>0?`已确认，剩余 ${pend-1} 枚待确认`:'全部奖章已确认，计入成长手册');
+      });
+    }
+    function toast(text){
+      const old=document.querySelector('.web-toast');old&&old.remove();
+      const d=document.createElement('div');
+      d.className='web-toast';d.textContent=text;
+      d.style.cssText='position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:999;background:#1A1A1A;color:#FFD100;border-radius:999px;padding:11px 24px;font-size:13.5px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:pop .2s ease both';
+      document.body.appendChild(d);setTimeout(()=>d.remove(),2000);
+    }
+    /* 学期报表导出（演示：文本格式） */
+    $('exportReport').onclick=()=>{
+      const text=['校园闯关小勇士｜学期报表（离线演示）','班级：五(2)班 · 学段：小学 · 赛季：SSN 2026','','过程性评价（小学四维度）：课堂参与 40% / 完赛体验 30% / 同伴反馈 20% / 安全品德 10%','健康档案摘要：全班 40 人 · 家长知情同意 38/40 · 见习 1 · BMI 关注 1','奖章发放：'+medalQ.filter(m=>m.ok).length+' / '+medalQ.length+' 已确认','','注：过程性评价仅作平时分参考；正式体测按《国家学生体质健康标准》独立组织，课堂表现不得换算正式成绩。'].join('\n');
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));a.download='校园闯关小勇士-学期报表.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      toast('学期报表已导出（演示为文本格式）');
+    };
+
+    /* ---------- 两级 Tab 切换 ---------- */
+    function goPage(id){document.querySelector(`[data-tab="${id}"]`).click();}
+    function goSub(id){document.querySelector(`[data-sub="${id}"]`).click();}
+    document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');$(b.dataset.tab).classList.add('active');
+    });
+    document.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{
+      document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.subpage').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');$(b.dataset.sub).classList.add('active');
+    });
+
+    /* ---------- 小勇士教练（AI 指令条） ---------- */
+    const mini=$('miniChat');
+    function addMini(role,html){
+      const d=document.createElement('div');
+      d.className='mini-msg '+role;d.innerHTML=html;
+      mini.appendChild(d);mini.scrollTop=mini.scrollHeight;
+    }
+    function parseIntent(t){
+      let ch=[];
+      const m=t.match(/(\d+)\s*(人|名|个学生)/);
+      if(m){$('count').value=Math.min(60,Math.max(8,+m[1]));ch.push('人数 '+Math.min(60,Math.max(8,+m[1])));}
+      const mm=t.match(/(\d+)\s*分钟/);
+      if(mm&&[35,40,45].includes(+mm[1])){$('minutes').value=mm[1];ch.push(mm[1]+'分钟');}
+      if(/室内|雨天|体育馆/.test(t)){$('place').value='室内小场地';ch.push('室内');}
+      if(/操场|室外|户外/.test(t)){$('place').value='操场';ch.push('操场');}
+      if(/耐力|折返|往返/.test(t)){$('goal').value='折返与耐力';ch.push('折返与耐力');}
+      if(/速度|起跑|反应/.test(t)){$('goal').value='速度与协调';ch.push('速度与协调');}
+      if(/合作|协作|配合/.test(t)){$('goal').value='协调与合作';ch.push('协调与合作');}
+      if(/跳绳/.test(t)){$('rope').checked=true;ch.push('跳绳');}
+      if(/软球|投准|投掷/.test(t)){$('ball').checked=true;ch.push('软球');}
+      if(/轻量|低强度|简单/.test(t)){$('light').checked=true;ch.push('轻量');}
+      return ch;
+    }
+    function regenerate(){lesson=make(cfg());render();}
+    function summaryMsg(){
+      return `已生成 <span class="hl">${lesson.title}</span>：${lesson.c.count}人·${lesson.groups.length}组·${lesson.c.minutes}分钟·8 站点。首站「${lesson.stations[0].name}」，到「闯关卡片」查看分层任务。`;
+    }
+    $('send').onclick=()=>{
+      const v=$('chatInput').value.trim();
+      if(!v)return;
+      addMini('user',v.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])));
+      $('chatInput').value='';
+      const ch=parseIntent(v);
+      try{
+        if(ch.length){regenerate();addMini('coach','已调整：'+ch.join('、')+'。<br>'+summaryMsg()+'<br>请到「课案」页审核后实施。');goPage('plan');goSub('lesson');}
+        else addMini('coach','试试告诉我：<span class="hl">人数</span> / <span class="hl">场地</span>（操场·室内）/ <span class="hl">重点</span>（耐力·速度·协作）/ 器材（跳绳·软球）。');
+      }catch(e){addMini('coach',e.message);}
+    };
+    $('chatInput').onkeydown=e=>{if(e.key==='Enter')$('send').click()};
+    $('template').onclick=()=>{
+      addMini('user','给我一份标准的挑战赛课案模板');
+      try{$('count').value=40;$('place').value='操场';regenerate();addMini('coach','好嘞！按默认条件（40人·操场·40分钟·折返与耐力）生成。<br>'+summaryMsg());}catch(e){addMini('coach',e.message);}
+      goPage('plan');goSub('lesson');
+    };
+
+    /* ---------- 表单、反馈与导出 ---------- */
+    $('generate').onclick=()=>{try{regenerate();addMini('coach','课案已按表单重新生成。<br>'+summaryMsg());goPage('plan');goSub('lesson');}catch(e){alert(e.message)}};
+    $('reflect').onclick=()=>{
+      let f={participation:'大部分主动参与',fatigue:'适中',waiting:'较少',note:$('note').value};
+      let a=[f.fatigue==='偏高'?'下节课采用20秒练习 / 40秒恢复，先检查动作与当天身体状态。':f.fatigue==='偏低'?'先检查等待时间与任务难度；由教师决定是否增加有效练习，暂不自动加量。':'保留当前节奏，继续观察动作质量与恢复情况。',
+      f.waiting==='较多'?'下次按每组最多4人重排，核对新增练习位；空间不足则全班同练。':'保留轮转组织，强调同向换站与安全间距。',
+      f.participation==='部分学生需要鼓励'?'增加学生自选任务与伙伴支持，用动作进步替代速度排名。':'继续记录个人进步，让不同基础的孩子都能为小组贡献。'];
+      $('reviewTitle').textContent='下一堂课，可以这样调整';
+      $('reviewContent').innerHTML=`<div class="chips"><span>${f.participation}</span><span>疲劳：${f.fatigue}</span><span>等待：${f.waiting}</span></div><ol class="advice">${a.map(x=>'<li>'+x+'</li>').join('')}</ol>${f.note?'<p class="empty"><b>教师观察：</b>'+f.note.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))+'</p>':''}<button class="btn-line" id="nextLesson">用这份反馈生成下一课 →</button>`;
+      $('nextLesson').onclick=()=>{try{lesson=make(cfg(),f);render();goPage('plan');goSub('lesson');addMini('coach','已结合课堂反馈生成下一课。<br>'+summaryMsg());}catch(e){alert(e.message)}};
+    };
+    $('export').onclick=()=>{
+      let text=['校园小勇士挑战赛｜'+$('lessonTitle').value,lesson.c.grade+' · '+lesson.c.count+'人 · '+lesson.c.minutes+'分钟','离线规则演示课案，实施前由教师审核。','',...lesson.stations.flatMap((s,i)=>['0'+(i+1)+' '+s.name+'（'+s.skill+'）','器材：'+s.equipment,s.safe,...s.levels.map((x,j)=>['起步','进阶','挑战'][j]+'：'+x),'关联：'+s.link,'']),'正式体测按国家标准独立组织，课堂表现不得换算正式成绩。'].join('\n');
+      let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));a.download='校园小勇士挑战赛-课案.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    };
+
+    /* ---------- 课案内容板块渲染 ---------- */
+    const SAFETY=[
+      {cat:'场地',items:[{item:'操场跑道无积水、无碎石',s:'ok',n:'课前 15 分钟检查'},{item:'8 站点标记清晰，间距 ≥ 3 米',s:'ok',n:'标志桶已就位'},{item:'缓冲区无障碍物（≥ 2 米）',s:'ok',n:'清空周边器材'},{item:'动线单向，无交叉路径',s:'ok',n:'S1→S8 同向'},{item:'急救点设在终点旁，通道畅通',s:'ok',n:'急救箱已检查'}]},
+      {cat:'器械',items:[{item:'跳绳 40 根（含备用 5）',s:'ok',n:'手柄无松动'},{item:'实心球 2kg × 4',s:'ok',n:'表面无破损'},{item:'标志桶 × 12（含备用 6）',s:'ok',n:'底部配重稳'},{item:'气球 × 8（含备用 4）',s:'warn',n:'2 个气压偏低，已补气'},{item:'体操垫 × 8，无裂缝',s:'ok',n:'防滑面朝上'},{item:'软包 2kg × 4',s:'ok',n:'拉链完好'},{item:'平衡垫 × 4',s:'ok',n:'充气适中'}]},
+      {cat:'健康',items:[{item:'全班 40 人，家长知情同意 38/40',s:'warn',n:'2 人未交，需补签'},{item:'见习 1 人（脚踝恢复期），安排安全员',s:'ok',n:'李跳跳·见习'},{item:'BMI 关注 1 人（29.5），锁定起步难度',s:'warn',n:'王小雨·自动锁定'},{item:'无心脏病、哮喘等禁忌症',s:'ok',n:'健康档案已核'},{item:'心率手环电量充足（40 块）',s:'ok',n:'课前统一发放'}]},
+      {cat:'应急',items:[{item:'急救箱：绷带/冰袋/消毒液齐全',s:'ok',n:'有效期至 2027'},{item:'AED 设备就位（校医室门口）',s:'ok',n:'电量 92%'},{item:'校医值班，应急电话已确认',s:'ok',n:'校医室 × 3120'},{item:'五大应急预案张贴（碰撞/跌倒/中暑/心脏/器材）',s:'ok',n:'教师已签阅'},{item:'疏散路线无堵塞',s:'ok',n:'东门疏散'}]},
+    ];
+    let sh='';
+    SAFETY.forEach(g=>{g.items.forEach((it,i)=>{sh+=`<tr><td class="cat">${i===0?g.cat:''}</td><td>${it.item}</td><td><span class="ck ck-${it.s}">${it.s==='ok'?'✓ 合格':'⚠ 注意'}</span></td><td style="color:var(--muted)">${it.n}</td></tr>`;});});
+    $('safetyBody').innerHTML=sh;
+
+    const FLOW=[
+      {t:'00–03',p:'状态确认',m:'3',tea:'点名、健康询问、心率基线测量、发放手环',stu:'列队、签到、报告身体状态、佩戴手环',f:'全班集合',main:false},
+      {t:'03–08',p:'动态热身',m:'5',tea:'带领全身动态拉伸（颈肩→髋膝→踝），示范标准',stu:'跟随热身，激活肌群，逐步提升心率',f:'两列横队·跟做',main:false},
+      {t:'08–14',p:'示范学练',m:'6',tea:'逐站演示动作与安全要点，强调轻落地/不抢道',stu:'观察示范，每站体验 1 次起步动作',f:'分组轮转观摩',main:false},
+      {t:'14–34',p:'分站轮转',m:'20',tea:'哨声控制换站（30″练习/30″恢复），监控心率与动作',stu:'按难度选择完成任务，同向换站，小组互助',f:'4 组 × 8 站·同向',main:true},
+      {t:'34–39',p:'合作运用',m:'5',tea:'组织小组接力赛（综合 4 站），强调协作与加油',stu:'小组接力，为同伴加油，体验团队协作',f:'4 组·接力赛',main:false},
+      {t:'39–44',p:'放松反馈',m:'5',tea:'带领静态拉伸（3 个动作），收集课中反馈',stu:'跟随放松，填写课中反馈（参与/疲劳/等待）',f:'两列横队·静态拉伸',main:false},
+    ];
+    $('flowBody').innerHTML=FLOW.map(f=>`<tr class="${f.main?'main-row':''}"><td><b>${f.t}</b></td><td class="phase">${f.p}</td><td><span class="dur">${f.m}′</span></td><td>${f.tea}</td><td>${f.stu}</td><td><span class="ftag">${f.f}</span></td></tr>`).join('');
+
+    const MEDALS=[
+      {i:'🚀',n:'首闯启航章',c:'season',cl:'赛季',cr:'第一次完整闯关 8 站',e:'移动端'},
+      {i:'💪',n:'坚毅坚持章',c:'season',cl:'赛季',cr:'全程坚持未退出',e:'移动端'},
+      {i:'🏁',n:'全程完赛章',c:'season',cl:'赛季',cr:'完整 8 站全部完成',e:'移动端'},
+      {i:'⭐',n:'基础通关章',c:'skill',cl:'技能',cr:'起步难度完成 ≥ 6 站',e:'移动端'},
+      {i:'🏅',n:'进阶突破章',c:'skill',cl:'技能',cr:'进阶难度完成 ≥ 6 站',e:'移动端'},
+      {i:'🎖',n:'挑战勇者章',c:'skill',cl:'技能',cr:'挑战难度完成 ≥ 7 站',e:'移动端'},
+      {i:'🛡',n:'安全守护章',c:'quality',cl:'素养',cr:'主动提醒同伴安全 ≥ 1 次',e:'Web 端'},
+      {i:'🤝',n:'协作互助章',c:'quality',cl:'素养',cr:'帮助同伴 ≥ 1 次',e:'Web 端'},
+      {i:'🌟',n:'PB 刷新章',c:'quality',cl:'素养',cr:'和自己的历史比，PB 刷新',e:'移动端'},
+    ];
+    $('medalBody').innerHTML=MEDALS.map(m=>`<tr><td class="mi">${m.i}</td><td><b>${m.n}</b></td><td class="c-${m.c}">${m.cl}</td><td>${m.cr}</td><td>${m.e}</td></tr>`).join('');
+
+    const MAP=[
+      {no:'S1',st:'节奏跳绳',dim:'心肺·耐力',tests:['1分钟跳绳','50米×8往返跑'],lv:['20″跳绳+8次开合跳','30″跳绳+10次开合跳','45″跳绳+15次开合跳']},
+      {no:'S2',st:'球上俯卧撑',dim:'上肢·力量',tests:['1分钟仰卧起坐'],lv:['跪姿 3 次','跪姿 5 次','跪姿 8 次']},
+      {no:'S3',st:'敏捷绕桶',dim:'灵敏·反应',tests:['50米跑'],lv:['绕桩 1 趟','绕桩 2 趟','绕桩 3 趟']},
+      {no:'S4',st:'气球护送',dim:'协作·游戏',tests:['—'],lv:['护送 10 米 ×1','护送 10 米 ×2','绕障护送 ×2']},
+      {no:'S5',st:'卷腹挑战',dim:'核心·控制',tests:['1分钟仰卧起坐'],lv:['10 次','15 次','20 次']},
+      {no:'S6',st:'高抬腿冲刺',dim:'心肺·速度',tests:['50米跑','50米×8往返跑'],lv:['15 秒','20 秒','30 秒']},
+      {no:'S7',st:'包包抱抱',dim:'下肢·协作',tests:['—'],lv:['抱包走 10 米 ×1','抱包走 10 米 ×2','绕障抱包 ×2']},
+      {no:'S8',st:'平衡小勇士',dim:'平衡·专注',tests:['坐位体前屈'],lv:['单脚站 15 秒/腿','单脚站 20 秒/腿','单脚站 30 秒/腿']},
+    ];
+    $('mapBody').innerHTML=MAP.map(s=>{
+      const tp=s.tests.map(t=>`<span class="map-pill ${t==='—'?'':'hot'}">${t}</span>`).join(' ');
+      const lv=s.lv.map((l,i)=>`<span class="map-lv ${['b','i','a'][i]}">${['起','进','挑'][i]}</span>${l}`).join('<br>');
+      return `<tr><td><b>${s.no}</b></td><td class="st">${s.st}</td><td>${s.dim}</td><td>${tp}</td><td style="font-size:11.5px">${lv}</td></tr>`;
+    }).join('');
+
+    /* ---------- 初始化（先连后端，失败则回退离线） ---------- */
+    renderUnit();renderMedalQ();renderCal();
+    addMini('coach','教练就位！输入班级条件（如 <span class="hl">36人 室内 练协作</span>），或点「一键体验模板」。');
+    try{lesson=make(cfg());render();}catch(e){}
+    
+    // 异步连接后端并加载真实数据
+    (async()=>{
+      try{
+        const ok=await ensureLogin();
+        if(ok){
+          addMini('coach','<span class="hl">已连接后端</span>，正在加载真实课案数据…');
+          const pkg=await loadLessonPackage();
+          if(pkg){
+            lesson=adaptLesson(pkg);
+            render();
+            addMini('coach','已加载后端课案：<span class="hl">'+lesson.title+'</span> · '+lesson.stations.length+' 站点。');
+          }
+          await renderSyncData();
+          await renderCases();
+          wireDownloads();
+          addMini('coach','全部数据已同步，课后反馈页可确认奖章，F7 物料可一键下载。');
+        }else{
+          addMini('coach','后端未启动，当前为离线演示模式。');
+        }
+      }catch(e){
+        addMini('coach','后端连接异常：'+e.message+'，使用离线模式。');
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>

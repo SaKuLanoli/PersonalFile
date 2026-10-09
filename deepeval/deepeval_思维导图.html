@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>DeepEval v4.2.3 仓库思维导图</title>
+<style>
+  body { margin: 0; }
+  svg.markmap { width: 100%; height: 100vh; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@0.16"></script>
+</head>
+<body>
+<div class="markmap">
+<script type="text/template">
+---
+markmap:
+  initialExpandLevel: 2
+  maxWidth: 320
+---
+
+# DeepEval v4.2.3
+# LLM 评估框架（Python + TypeScript）
+
+## 📦 deepeval/ — Python 主包
+### metrics/（332 文件，48 类指标）
+#### RAG 指标
+- faithfulness 忠实度
+- answer_relevancy 回答相关性
+- contextual_precision/recall/relevancy
+- hallucination 幻觉
+#### LLM-as-Judge
+- g_eval（含 schema/模板）
+- conversational_g_eval
+- arena_g_eval
+#### Agentic / 智能体指标
+- task_completion 任务完成度
+- tool_use / tool_correctness
+- tool_permission
+- mcp / mcp_use_metric
+- dag / conversational_dag（DAG 工作流）
+- plan_adherence / plan_quality
+- goal_accuracy / step_efficiency
+- agent_loop_detection
+#### 安全指标
+- toxicity 毒性
+- bias 偏见
+- misuse 滥用
+- pii_leakage 隐私泄露
+- non_advice
+#### 多轮对话指标
+- turn_faithfulness / turn_relevancy
+- turn_contextual_* 系列
+- conversation_completeness
+- knowledge_retention
+#### 多模态指标（28 文件）
+- image_coherence
+- image_editing
+- image_helpfulness
+- image_reference
+- text_to_image
+#### 语音指标（11 文件）
+- voice/ 目录
+#### 其他
+- summarization 摘要
+- json_correctness
+- exact_match / pattern_match
+- prompt_alignment
+- role_adherence / role_violation
+- topic_adherence
+- argument_correctness
+- community/ 社区贡献指标
+
+### models/（64 文件）判题模型层
+#### llms/（17 个 LLM 接入）
+- openai / azure / anthropic
+- gemini / grok / deepseek / kimi
+- amazon_bedrock / litellm / ollama
+- local 本地模型 / openrouter
+- portkey / gateway
+#### embedding_models/（5）
+#### stt/ 语音转文字（17）
+#### tts/ 文字转语音（13）
+#### 本地小模型
+- detoxify（毒性）
+- summac（摘要）
+- unbias（偏见）
+
+### benchmarks/（127 文件，19 个基准）
+- MMLU / GSM8K / HumanEval
+- HellaSwag / BIG-Bench Hard（60 文件）
+- DROP / SQuAD / TruthfulQA
+- BBQ / IFEval / MATH-QA
+- LogiQA / Winogrande / LAMBADA
+- BoolQ / ARC / EquityMedQA
+
+### evaluate/（16 文件）执行引擎
+- evaluate.py 主入口
+- console_report 终端报告
+- local_store 本地结果存储
+- compare 对比多次评估
+- execute/ 并发执行
+
+### test_case/ + dataset/ 数据结构
+- LLMTestCase 单轮
+- ConversationalTestCase 多轮
+- ArenaTestCase / mcp.py
+- EvaluationDataset / Golden 金标准
+
+### synthesizer/（14 文件）
+- 合成测试数据生成
+- chunking 文档分块
+- templates 生成模板
+
+### simulator/（21 文件）对话模拟器
+- conversation_simulator
+- simulation_graph 模拟图
+- 生命周期钩子 / 停止逻辑
+- 人物角色模板
+
+### voice/（36 文件）语音评测
+- duplex 全双工
+- floor_control 轮次控制
+- interruption 打断处理
+- turn_detection / streaming
+- connectors/（24 个连接器）
+
+### tracing/（23 文件）可观测性
+- instrument 装饰器追踪
+- otel/ OpenTelemetry 导出
+- offline_evals 离线评估
+- patchers 自动插桩
+
+### integrations/（34 文件）框架集成
+- langchain / llama_index
+- crewai / pydantic_ai
+- google_adk / strands / agentcore
+- hugging_face / openinference
+
+### optimizer/（38 文件）提示词优化
+- prompt_optimizer
+- algorithms/（22 个算法，如 DSPy）
+- scorer / rewriter
+
+### cli/（39 文件）命令行工具
+- `deepeval test` 跑测试
+- generate 生成数据/指标
+- auth 登录 Confident AI
+- providers/（21 个 LLM 接入配置）
+- diagnose 诊断
+
+### inspect/（14 文件）TUI 检查器
+- Textual 终端 UI
+- widgets/ 7 个组件
+
+### confident/ — Confident AI 云平台 API
+
+### 其他模块
+- prompt/ 提示词管理
+- telemetry/ 遥测
+- plugins/ 插件系统
+- scorer / sqlite_store
+- anthropic|openai|openai_agents 插桩
+- red_teaming 红队（规划中）
+- config / annotation / test_run
+
+## 🟦 typescript/ — TS SDK（450 文件）
+- metrics/（153 文件，镜像 Python 指标）
+- tracing/（17）
+- evaluate/（18）
+- models / integrations
+- cli / inspect / dataset
+- 用于 JS/TS 生态与 Node 项目
+
+## 📚 docs/ — 文档站（Next.js，635 文件）
+### content/（279 篇 MDX）
+- docs/（155）核心文档
+  - 指标分类：RAG / agentic / safety / multi-turn / voice / mcp / images / non-llm
+  - 评估教程：单轮/多轮/组件级/轨迹级
+  - 对话模拟器 / 金标合成器
+  - 提示词优化 / CI-CD 集成
+- integrations/（58）集成指南
+- guides（21）/ tutorials（18）
+- blog（22）/ changelog（5）
+### app + src + components（200 文件）
+- Next.js 站点框架（deepeval.getdocs.net 源码）
+
+## 🧪 tests/ — 测试（713 文件）
+- test_integrations/（306）
+- test_core/（272）
+- test_metrics/（59）
+- test_confident/（13）
+- test_docs/（48）
+
+## 📁 examples/ — 示例
+- notebooks（6 个 Jupyter）
+- rag_evaluation / mcp_evaluation
+- tracing / community / dag
+
+## 🤖 skills/ — AI Agent 技能包
+- deepeval（16 文件，SKILL.md）
+- deepeval-otel / deepeval-tracing
+- 供 Claude/Cursor 等 AI 编程工具使用
+
+## ⚙️ 工程配置
+- pyproject.toml（poetry，v4.2.3）
+- .github/workflows（17 个 CI 流程）
+- .claude-plugin / .cursor-plugin
+- .scripts/changelog 版本发布
+- .env.example 环境变量模板
+- 根文档：README / CONTRIBUTING / DOCS.md / MAINTAINERS.md / LICENSE（Apache-2.0）
+</script>
+</div>
+</body>
+</html>
